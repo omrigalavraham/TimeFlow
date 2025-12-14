@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --color-must: #9333ea;
+  /* Purple-600 */
+  --color-should: #0d9488;
+  /* Teal-600 */
+  --color-could: #64748b;
+  /* Slate-500 */
+}
+
+/* Custom dark mode variant based on class */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@keyframes gradient-xy {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-xy 15s ease infinite;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  /* Slate-900 */
+}
+
+.dark {
+  --background: #0f172a;
+  /* Slate-900 */
+  --foreground: #f8fafc;
+  /* Slate-50 */
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.priority-must {
+  @apply bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200;
+}
+
+.priority-should {
+  @apply bg-teal-100 text-teal-700 border-teal-200 hover:bg-teal-200;
+}
+
+.priority-could {
+  @apply bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200;
+}

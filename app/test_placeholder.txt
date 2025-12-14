@@ -1,0 +1,6 @@
+import { Task } from './store';
+
+// ... (existing code, we will append to scheduler.ts is better but I will use replace_file to add this function)
+// Actually, I should use multi_replace or append. Since I cannot append easily, I will read and replace.
+// But wait, I can just write the whole file again if it's small, or use replace.
+// Let's use replace to add the new function.
