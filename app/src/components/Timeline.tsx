@@ -54,7 +54,7 @@ export default function Timeline({ tasks }: Props) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl min-h-[500px]">
+            <div className="bg-slate-50/50 dark:bg-slate-900/50 p-2 md:p-4 rounded-xl min-h-[500px]">
                 {/* Visual day indicator or just title */}
 
                 <SortableContext items={tasks} strategy={verticalListSortingStrategy}>

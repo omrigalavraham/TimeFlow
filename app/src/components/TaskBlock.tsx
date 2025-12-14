@@ -105,7 +105,7 @@ export default function TaskBlock({ task, isOverlay }: Props) {
 
             {/* The Colored Task Row */}
             <div className={cn(
-                "flex-1 flex items-center gap-3 p-4 rounded-2xl shadow-sm border border-transparent transition-all overflow-hidden",
+                "flex-1 flex items-center gap-2 md:gap-3 p-3 md:p-4 rounded-2xl shadow-sm border border-transparent transition-all overflow-hidden",
                 taskColor,
                 task.completed && "opacity-60 grayscale",
                 isOverlay ? "shadow-2xl rotate-1 bg-white dark:bg-slate-800" : "hover:shadow-md hover:border-black/5 dark:hover:border-white/10",
@@ -121,10 +121,10 @@ export default function TaskBlock({ task, isOverlay }: Props) {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start flex-wrap gap-1">
                         <span
                             className={cn(
-                                "font-bold text-lg leading-tight truncate block text-slate-800 dark:text-slate-100",
+                                "font-bold text-base md:text-lg leading-tight block text-slate-800 dark:text-slate-100 break-words line-clamp-2 md:line-clamp-1",
                                 task.completed && "line-through text-slate-500",
                                 task.type === 'break' && "text-teal-700 dark:text-teal-200"
                             )}
@@ -133,13 +133,13 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                             {task.title}
                         </span>
                         {task.startTime && (
-                            <span className="text-xs font-mono font-black text-slate-600 dark:text-slate-400 bg-white/40 dark:bg-black/20 px-2 py-1 rounded-md ml-2 whitespace-nowrap backdrop-blur-sm">
+                            <span className="text-xs font-mono font-black text-slate-600 dark:text-slate-400 bg-white/40 dark:bg-black/20 px-2 py-1 rounded-md whitespace-nowrap backdrop-blur-sm">
                                 {task.startTime}
                             </span>
                         )}
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm font-medium text-slate-600/70 dark:text-slate-300/70 mt-0.5">
+                    <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-slate-600/70 dark:text-slate-300/70 mt-1">
                         <Clock size={12} className="inline mr-1" />
                         <span>{task.duration} דק׳</span>
                         {task.recurrence && (
@@ -152,8 +152,8 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                     </div>
                 </div>
 
-                {/* Actions (Hover) */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 bg-white/50 dark:bg-black/20 p-1 rounded-full backdrop-blur-sm">
+                {/* Actions (Hover on Desktop, Always on Mobile) */}
+                <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 bg-white/50 dark:bg-black/20 p-1 rounded-full backdrop-blur-sm">
                     {task.type !== 'break' && !task.completed && (
                         <>
                             {/* Move to Tomorrow Button */}
@@ -165,10 +165,10 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                                     const tomorrowStr = tomorrow.toISOString().split('T')[0];
                                     useStore.getState().moveTaskToDate(task.id, tomorrowStr);
                                 }}
-                                className="p-2 hover:bg-white dark:hover:bg-slate-700 text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 rounded-full transition-all shadow-sm hover:scale-110"
+                                className="p-1.5 md:p-2 hover:bg-white dark:hover:bg-slate-700 text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 rounded-full transition-all shadow-sm hover:scale-110"
                                 title="העבר למחר"
                             >
-                                <ArrowRightCircle size={18} />
+                                <ArrowRightCircle size={16} className="md:w-[18px] md:h-[18px]" />
                             </button>
 
                             <button
@@ -176,10 +176,10 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                                     e.stopPropagation();
                                     useStore.getState().setActiveTask(task.id);
                                 }}
-                                className="p-2 hover:bg-white dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 rounded-full transition-all shadow-sm hover:scale-110"
+                                className="p-1.5 md:p-2 hover:bg-white dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 rounded-full transition-all shadow-sm hover:scale-110"
                                 title="כנס לפוקוס"
                             >
-                                <Play size={16} className="fill-current" />
+                                <Play size={14} className="fill-current md:w-[16px] md:h-[16px]" />
                             </button>
                         </>
                     )}
@@ -199,13 +199,13 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                                 }
                             }}
                             className={cn(
-                                "p-2 rounded-full transition-all shadow-sm hover:scale-110",
+                                "p-1.5 md:p-2 rounded-full transition-all shadow-sm hover:scale-110",
                                 task.completed
                                     ? "text-green-600 bg-green-100 dark:bg-green-900/30"
                                     : "text-slate-500 hover:text-green-600 hover:bg-white dark:hover:bg-slate-700"
                             )}
                         >
-                            <CheckCircle size={18} />
+                            <CheckCircle size={16} className="md:w-[18px] md:h-[18px]" />
                         </button>
                     )}
 
@@ -214,9 +214,9 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                             e.stopPropagation(); // Prevent drag
                             deleteTask(task.id);
                         }}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all shadow-sm hover:scale-110"
+                        className="p-1.5 md:p-2 text-slate-400 hover:text-red-500 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all shadow-sm hover:scale-110"
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
                     </button>
                 </div>
             </div>

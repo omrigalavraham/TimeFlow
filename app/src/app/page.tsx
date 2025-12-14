@@ -70,8 +70,22 @@ export default function Home() {
       <TaskCompletionModal />
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 w-full max-w-[1800px] mx-auto p-4 md:p-8 h-full">
-        {/* Sidebar Area: Input & Stats */}
-        <div className="md:col-span-4 flex flex-col gap-6 overflow-y-auto pb-20 scrollbar-hide">
+        {/* Main Area: Timeline (First on Mobile) */}
+        <div className="md:col-span-8 flex flex-col min-h-0 bg-white dark:bg-slate-900/50 rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100 dark:border-slate-800/50 backdrop-blur-sm order-1 md:order-2 h-[60vh] md:h-auto">
+          {/* Header with Weekly Tabs */}
+          <div className="mb-4 md:mb-6">
+            <h2 className="text-xl md:text-2xl font-black mb-4 px-2">הלו"ז שלי</h2>
+            <WeeklyTabs />
+          </div>
+
+          {/* Scrollable Timeline */}
+          <div className="flex-1 overflow-y-auto pr-2 pl-2 -mr-2 scrollbar-none">
+            <Timeline tasks={filteredTasks} />
+          </div>
+        </div>
+
+        {/* Sidebar Area: Input & Stats (Second on Mobile) */}
+        <div className="md:col-span-4 flex flex-col gap-4 md:gap-6 overflow-y-auto pb-20 scrollbar-hide order-2 md:order-1">
           <StatsPanel />
 
           {/* Collapsible Task Input */}
@@ -87,8 +101,6 @@ export default function Home() {
               <Plus size={20} /> הוסף משימה חדשה
             </button>
           )}
-
-
 
           {/* Actions */}
           <div className="space-y-3">
@@ -110,20 +122,6 @@ export default function Home() {
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
               <LifeHappenedModal />
             </div>
-          </div>
-        </div>
-
-        {/* Main Area: Timeline */}
-        <div className="md:col-span-8 flex flex-col min-h-0 bg-white dark:bg-slate-900/50 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800/50 backdrop-blur-sm">
-          {/* Header with Weekly Tabs */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-black mb-4 px-2">הלו"ז שלי</h2>
-            <WeeklyTabs />
-          </div>
-
-          {/* Scrollable Timeline */}
-          <div className="flex-1 overflow-y-auto pr-2 pl-2 -mr-2 scrollbar-none">
-            <Timeline tasks={filteredTasks} />
           </div>
         </div>
       </div>
