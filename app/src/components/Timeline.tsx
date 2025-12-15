@@ -4,7 +4,7 @@ import { useStore, Task } from '@/lib/store'; // Import Task type
 import TaskBlock from './TaskBlock';
 import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 interface Props {
     tasks: Task[];
@@ -13,6 +13,10 @@ interface Props {
 export default function Timeline({ tasks }: Props) {
     const reorderTasks = useStore((state) => state.reorderTasks);
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [dragWidth, setDragWidth] = useState<number | null>(null);
+    const columnRef = useState<HTMLDivElement | null>(null); // Use callback ref or simple ref? Simple ref is fine if component doesn't unmount/remount weirdly.
+    // Actually, useRef is better.
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -33,6 +37,9 @@ export default function Timeline({ tasks }: Props) {
 
     const handleDragStart = (event: any) => {
         setActiveId(event.active.id);
+        if (containerRef.current) {
+            setDragWidth(containerRef.current.offsetWidth);
+        }
     };
 
     const handleDragEnd = (event: any) => {
@@ -47,6 +54,7 @@ export default function Timeline({ tasks }: Props) {
         }
 
         setActiveId(null);
+        setDragWidth(null);
     };
 
     if (tasks.length === 0) {
@@ -64,7 +72,10 @@ export default function Timeline({ tasks }: Props) {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="bg-slate-50/50 dark:bg-slate-900/50 p-2 md:p-4 rounded-xl min-h-[500px]">
+            <div
+                ref={containerRef}
+                className="bg-slate-50/50 dark:bg-slate-900/50 p-2 md:p-4 rounded-xl min-h-[500px]"
+            >
                 {/* Visual day indicator or just title */}
 
                 <SortableContext items={tasks} strategy={verticalListSortingStrategy}>
@@ -74,7 +85,11 @@ export default function Timeline({ tasks }: Props) {
                 </SortableContext>
 
                 <DragOverlay>
-                    {activeTask ? <TaskBlock task={activeTask} isOverlay /> : null}
+                    {activeTask ? (
+                        <div style={{ width: dragWidth ? `${dragWidth}px` : 'auto' }}>
+                            <TaskBlock task={activeTask} isOverlay />
+                        </div>
+                    ) : null}
                 </DragOverlay>
             </div>
         </DndContext>
