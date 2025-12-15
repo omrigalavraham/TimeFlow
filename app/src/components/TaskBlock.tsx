@@ -105,58 +105,77 @@ export default function TaskBlock({ task, isOverlay }: Props) {
 
             {/* The Colored Task Row */}
             <div className={cn(
-                "flex-1 flex items-center gap-2 md:gap-3 p-3 md:p-4 rounded-2xl shadow-sm border border-transparent transition-all overflow-hidden",
+                "flex-1 flex flex-col md:flex-row items-stretch md:items-center gap-3 p-4 md:p-4 rounded-2xl shadow-sm border border-transparent transition-all overflow-hidden",
                 taskColor,
                 task.completed && "opacity-60 grayscale",
                 isOverlay ? "shadow-2xl rotate-1 bg-white dark:bg-slate-800" : "hover:shadow-md hover:border-black/5 dark:hover:border-white/10",
                 isActive && task.type !== 'break' && "ring-2 ring-purple-600 shadow-xl shadow-purple-500/20 animate-pulse bg-white/50"
             )}>
-                {/* Grip Handle */}
-                <div
-                    {...listeners}
-                    className="cursor-grab active:cursor-grabbing p-1 text-black/20 hover:text-black/50 dark:text-white/20 dark:hover:text-white/50 flex-shrink-0 transition-colors"
-                >
-                    <GripVertical size={18} />
-                </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start flex-wrap gap-1">
-                        <span
-                            className={cn(
-                                "font-bold text-base md:text-lg leading-tight block text-slate-800 dark:text-slate-100 break-words line-clamp-2 md:line-clamp-1",
-                                task.completed && "line-through text-slate-500",
-                                task.type === 'break' && "text-teal-700 dark:text-teal-200"
+                {/* Mobile Top Row: Handle + Content */}
+                <div className="flex items-start gap-3 w-full">
+                    {/* Grip Handle (Desktop: Left, Mobile: Top-Left) */}
+                    <div
+                        {...listeners}
+                        className="cursor-grab active:cursor-grabbing p-1 mt-1 md:mt-0 text-black/20 hover:text-black/50 dark:text-white/20 dark:hover:text-white/50 flex-shrink-0 transition-colors"
+                    >
+                        <GripVertical size={20} />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-1">
+                            {/* Title - Full wrap on mobile */}
+                            <span
+                                className={cn(
+                                    "font-bold text-lg leading-snug block text-slate-800 dark:text-slate-100 break-words whitespace-normal",
+                                    task.completed && "line-through text-slate-500",
+                                    task.type === 'break' && "text-teal-700 dark:text-teal-200"
+                                )}
+                                title={task.title}
+                            >
+                                {task.title}
+                            </span>
+
+                            {/* Start Time Badge */}
+                            {task.startTime && (
+                                <span className="self-start md:self-auto text-xs font-mono font-black text-slate-600 dark:text-slate-400 bg-white/40 dark:bg-black/20 px-2 py-1 rounded-md md:ml-2 whitespace-nowrap backdrop-blur-sm">
+                                    {task.startTime}
+                                </span>
                             )}
-                            title={task.title}
-                        >
-                            {task.title}
-                        </span>
-                        {task.startTime && (
-                            <span className="text-xs font-mono font-black text-slate-600 dark:text-slate-400 bg-white/40 dark:bg-black/20 px-2 py-1 rounded-md whitespace-nowrap backdrop-blur-sm">
-                                {task.startTime}
-                            </span>
-                        )}
-                    </div>
+                        </div>
 
-                    <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-slate-600/70 dark:text-slate-300/70 mt-1">
-                        <Clock size={12} className="inline mr-1" />
-                        <span>{task.duration} דק׳</span>
-                        {task.recurrence && (
-                            <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0.5 rounded text-[10px]">
-                                <Repeat size={10} />
-                                {task.recurrence === 'daily' ? 'יומי' : 'שבועי'}
+                        {/* Metadata Row */}
+                        <div className="flex items-center gap-3 text-sm font-medium text-slate-600/70 dark:text-slate-300/70 mt-2">
+                            <span className="flex items-center gap-1">
+                                <Clock size={14} />
+                                {task.duration} דק׳
                             </span>
-                        )}
-                        {task.type === 'break' && <span className="text-teal-600 text-xs bg-teal-100 dark:bg-teal-900/30 px-1.5 py-0.5 rounded">מנוחה</span>}
+
+                            {task.recurrence && (
+                                <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0.5 rounded text-[11px]">
+                                    <Repeat size={12} />
+                                    {task.recurrence === 'daily' ? 'יומי' : 'שבועי'}
+                                </span>
+                            )}
+
+                            {task.type === 'break' && (
+                                <span className="text-teal-600 text-xs bg-teal-100 dark:bg-teal-900/30 px-1.5 py-0.5 rounded">
+                                    מנוחה
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Actions (Hover on Desktop, Always on Mobile) */}
-                <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 bg-white/50 dark:bg-black/20 p-1 rounded-full backdrop-blur-sm">
+                {/* Actions Toolbar (Mobile: Bottom Row, Desktop: Right Side) */}
+                <div className={cn(
+                    "flex items-center justify-end gap-2 pt-3 mt-1 border-t border-black/5 md:border-0 md:pt-0 md:mt-0 md:bg-white/50 md:dark:bg-black/20 md:p-1 md:rounded-full md:backdrop-blur-sm transition-opacity",
+                    "opacity-100 md:opacity-0 md:group-hover:opacity-100" // Always visible on mobile
+                )}>
                     {task.type !== 'break' && !task.completed && (
                         <>
-                            {/* Move to Tomorrow Button */}
+                            {/* Move to Tomorrow */}
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -165,58 +184,57 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                                     const tomorrowStr = tomorrow.toISOString().split('T')[0];
                                     useStore.getState().moveTaskToDate(task.id, tomorrowStr);
                                 }}
-                                className="p-1.5 md:p-2 hover:bg-white dark:hover:bg-slate-700 text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 rounded-full transition-all shadow-sm hover:scale-110"
+                                className="p-2 hover:bg-white dark:hover:bg-slate-700 text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110"
                                 title="העבר למחר"
                             >
-                                <ArrowRightCircle size={16} className="md:w-[18px] md:h-[18px]" />
+                                <ArrowRightCircle size={20} />
                             </button>
 
+                            {/* Focus Mode */}
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     useStore.getState().setActiveTask(task.id);
                                 }}
-                                className="p-1.5 md:p-2 hover:bg-white dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 rounded-full transition-all shadow-sm hover:scale-110"
+                                className="p-2 hover:bg-white dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110"
                                 title="כנס לפוקוס"
                             >
-                                <Play size={14} className="fill-current md:w-[16px] md:h-[16px]" />
+                                <Play size={20} className="fill-current" />
                             </button>
                         </>
                     )}
 
+                    {/* Complete Button */}
                     {task.type !== 'break' && (
                         <button
                             onClick={(e) => {
-                                e.stopPropagation(); // Prevent drag
-
-                                // If completing (currently not completed), open the modal for feedback!
+                                e.stopPropagation();
                                 if (!task.completed) {
                                     useStore.getState().openCompletionModal(task.id);
                                 } else {
-                                    // If unchecking, just toggle back immediately? Or ask confirmation?
-                                    // For now, just toggle back.
                                     toggleTaskCompletion(task.id);
                                 }
                             }}
                             className={cn(
-                                "p-1.5 md:p-2 rounded-full transition-all shadow-sm hover:scale-110",
+                                "p-2 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110",
                                 task.completed
                                     ? "text-green-600 bg-green-100 dark:bg-green-900/30"
                                     : "text-slate-500 hover:text-green-600 hover:bg-white dark:hover:bg-slate-700"
                             )}
                         >
-                            <CheckCircle size={16} className="md:w-[18px] md:h-[18px]" />
+                            <CheckCircle size={20} />
                         </button>
                     )}
 
+                    {/* Delete Button */}
                     <button
                         onClick={(e) => {
-                            e.stopPropagation(); // Prevent drag
+                            e.stopPropagation();
                             deleteTask(task.id);
                         }}
-                        className="p-1.5 md:p-2 text-slate-400 hover:text-red-500 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all shadow-sm hover:scale-110"
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110"
                     >
-                        <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
+                        <Trash2 size={20} />
                     </button>
                 </div>
             </div>

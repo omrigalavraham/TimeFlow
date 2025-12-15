@@ -2,7 +2,7 @@
 
 import { useStore, Task } from '@/lib/store'; // Import Task type
 import TaskBlock from './TaskBlock';
-import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useState } from 'react';
 
@@ -15,7 +15,17 @@ export default function Timeline({ tasks }: Props) {
     const [activeId, setActiveId] = useState<string | null>(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // Require 8px movement before drag starts (prevents accidental clicks)
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250, // Long press (250ms) to start drag on touch
+                tolerance: 5, // Allow 5px movement during delay
+            },
+        }),
         useSensor(KeyboardSensor)
     );
 
