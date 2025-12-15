@@ -2,19 +2,28 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useStore, Task } from '@/lib/store';
-import { Play, Pause, Square, CheckCircle, Minimize2, Maximize2, X, Headphones, Volume2, VolumeX, CloudRain, Trees, Coffee, Waves } from 'lucide-react';
+import { Play, Pause, Square, CheckCircle, Minimize2, Maximize2, X, Headphones, Volume2, VolumeX, CloudRain, Trees, Coffee, Waves, Palette, Lock, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const SOUNDS = [
     { id: 'rain', label: 'גשם', icon: CloudRain, url: 'https://assets.mixkit.co/active_storage/sfx/2498/2498-preview.mp3' },
     { id: 'forest', label: 'יער', icon: Trees, url: 'https://assets.mixkit.co/active_storage/sfx/2493/2493-preview.mp3' },
-    { id: 'white_noise', label: 'רעש לבן', icon: Waves, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' }, // Placeholder for noise
+    { id: 'white_noise', label: 'רעש לבן', icon: Waves, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
+];
+
+const THEMES = [
+    { id: 'flow', label: 'זרימה', gradient: 'from-indigo-500 via-purple-500 to-pink-500', minLevel: 1 },
+    { id: 'ocean', label: 'אוקיינוס (רמה 2)', gradient: 'from-cyan-500 via-blue-500 to-indigo-500', minLevel: 2 },
+    { id: 'forest', label: 'יער (רמה 3)', gradient: 'from-emerald-500 via-green-500 to-teal-500', minLevel: 3 },
+    { id: 'fire', label: 'אש (רמה 5)', gradient: 'from-orange-500 via-red-500 to-yellow-500', minLevel: 5 },
+    { id: 'midnight', label: 'חצות (רמה 10)', gradient: 'from-slate-900 via-purple-900 to-black', minLevel: 10 },
 ];
 
 
 export default function FocusMode() {
-    const { tasks, activeTaskId, setActiveTask, toggleTaskCompletion, streak } = useStore();
+    const { tasks, activeTaskId, setActiveTask, toggleTaskCompletion, streak, addXp, level, xp } = useStore();
     const activeTask = tasks.find(t => t.id === activeTaskId);
 
     const [timeLeft, setTimeLeft] = useState(0);
@@ -31,6 +40,8 @@ export default function FocusMode() {
     const [isSoundEnabled, setIsSoundEnabled] = useState(false);
     const [soundVolume, setSoundVolume] = useState(0.5);
     const [selectedSoundId, setSelectedSoundId] = useState('rain');
+    const [selectedThemeId, setSelectedThemeId] = useState('flow');
+    const [showThemeSelector, setShowThemeSelector] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Audio Control Effect
@@ -88,7 +99,14 @@ export default function FocusMode() {
                     const next = prev - 1;
 
                     // Increment elapsed only in focus mode
-                    if (mode === 'focus') setElapsedTime(e => e + 1);
+                    if (mode === 'focus') {
+                        setElapsedTime(e => {
+                            const newElapsed = e + 1;
+                            // Add XP every minute
+                            if (newElapsed % 60 === 0) addXp(1);
+                            return newElapsed;
+                        });
+                    }
 
                     // Smart Insights (Only in Focus Mode)
                     if (mode === 'focus' && activeTask) {
@@ -152,6 +170,12 @@ export default function FocusMode() {
 
             // Mark as done
             toggleTaskCompletion(activeTask.id);
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#6366f1', '#a855f7', '#ec4899']
+            });
 
             // Trigger Global Modal for Feedback
             useStore.getState().openCompletionModal(activeTask.id, elapsedTime);
@@ -206,10 +230,27 @@ export default function FocusMode() {
     return (
         <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-500">
             {/* Gradient Background */}
-            <div className={cn(
-                "absolute inset-0 opacity-20 dark:opacity-10 transition-all duration-1000 pointer-events-none bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient",
-                isPaused && "opacity-0"
-            )} />
+            {/* Gradient Background - Animated */}
+            {THEMES.map(theme => (
+                <motion.div
+                    key={theme.id}
+                    initial={{ opacity: 0 }}
+                    animate={{
+                        opacity: selectedThemeId === theme.id && !isPaused ? 0.3 : 0,
+                        scale: isActive && !isPaused ? [1, 1.1, 1] : 1,
+                    }}
+                    transition={{
+                        opacity: { duration: 1 },
+                        scale: { duration: 20, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                    className={cn(
+                        "absolute inset-0 transition-all duration-1000 pointer-events-none bg-gradient-to-br",
+                        theme.gradient
+                    )}
+                />
+            ))}
+
+            <div className="absolute inset-0 bg-white/40 dark:bg-black/40 backdrop-blur-[2px]" />
 
             {/* Minimize / Exit / SOUND CONTROLS */}
             <div className="fixed top-6 right-6 z-50 flex items-center gap-4">
@@ -273,6 +314,53 @@ export default function FocusMode() {
                                     className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-500 cursor-pointer"
                                 />
                                 <Volume2 size={14} className="text-slate-400" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Theme Selector */}
+                <div className="relative group">
+                    <button
+                        onClick={() => setShowThemeSelector(!showThemeSelector)}
+                        className="flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md shadow-sm border bg-white/80 dark:bg-black/40 text-slate-500 border-slate-200 dark:border-slate-800"
+                        title="ערכות נושא"
+                    >
+                        <Palette size={18} />
+                    </button>
+
+                    <div className="absolute top-12 right-0 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between pointer-events-none">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Themes & Level</span>
+                                <span className="text-xs font-bold text-indigo-500">LVL {level}</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2">
+                                {THEMES.map(theme => {
+                                    const isLocked = level < theme.minLevel;
+                                    const isSelected = selectedThemeId === theme.id;
+                                    return (
+                                        <button
+                                            key={theme.id}
+                                            disabled={isLocked}
+                                            onClick={() => setSelectedThemeId(theme.id)}
+                                            className={cn(
+                                                "flex items-center justify-between p-2 rounded-lg transition-all text-xs font-medium w-full",
+                                                isSelected
+                                                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800"
+                                                    : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500",
+                                                isLocked && "opacity-50 cursor-not-allowed grayscale"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className={cn("w-4 h-4 rounded-full bg-gradient-to-br", theme.gradient)} />
+                                                {theme.label}
+                                            </div>
+                                            {isLocked && <Lock size={12} />}
+                                        </button>
+                                    )
+                                })}
                             </div>
                         </div>
                     </div>

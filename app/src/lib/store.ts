@@ -48,6 +48,11 @@ interface State {
     completionData: { taskId: string; elapsedTime?: number } | null;
     openCompletionModal: (taskId: string, elapsedTime?: number) => void;
     closeCompletionModal: () => void;
+
+    // Gamification
+    xp: number;
+    level: number;
+    addXp: (amount: number) => void;
 }
 
 export const useStore = create<State>((set, get) => ({
@@ -232,7 +237,8 @@ export const useStore = create<State>((set, get) => ({
 
         set(state => ({
             tasks: state.tasks.map(t => t.id === id ? { ...t, completed: newCompleted } : t),
-            streak: newCompleted ? state.streak + 1 : Math.max(0, state.streak - 1)
+            streak: newCompleted ? state.streak + 1 : Math.max(0, state.streak - 1),
+            xp: newCompleted ? state.xp + 50 : state.xp
         }));
 
         if (!supabase) return;
@@ -276,6 +282,24 @@ export const useStore = create<State>((set, get) => ({
             return {
                 tasks: [...otherTasks, ...shiftSchedule(currentDayTasks, minutes)],
             }
+        });
+    },
+
+    // --- Gamification ---
+    xp: 0,
+    level: 1,
+    addXp: (amount) => {
+        set(state => {
+            const newXp = state.xp + amount;
+            const newLevel = Math.floor(Math.sqrt(newXp / 100)) + 1; // Simple progression curve: 0->1, 100->2, 400->3...
+
+            if (newLevel > state.level) {
+                // Level Up!
+                // We could trigger a celebratory modal here if we had one
+                console.log("Level Up!", newLevel);
+            }
+
+            return { xp: newXp, level: newLevel };
         });
     }
 }));
