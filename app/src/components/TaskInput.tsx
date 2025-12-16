@@ -112,14 +112,17 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                                             type="button"
                                             onClick={() => setCategory(cat as Category)}
                                             className={cn(
-                                                "p-2 rounded-lg transition-all border",
+                                                "p-2 rounded-lg transition-all border relative group",
                                                 isSelected
                                                     ? cn("border-transparent ring-2 ring-offset-1 ring-slate-200 dark:ring-slate-700", config.color)
                                                     : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-100"
                                             )}
-                                            title={config.label}
                                         >
                                             <Icon size={18} />
+                                            {/* Custom Tooltip */}
+                                            <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                                {config.label}
+                                            </span>
                                         </button>
                                     )
                                 })}

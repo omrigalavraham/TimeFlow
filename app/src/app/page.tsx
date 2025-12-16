@@ -49,11 +49,22 @@ export default function Home() {
     return null;
   }
 
-  // Filter tasks for the selected date
+  // Filter tasks for the selected date and category
   const todayStr = new Date().toISOString().split('T')[0];
+  const { activeCategoryFilter } = useStore(); // Destructure filter
+
   const filteredTasks = tasks.filter(t => {
-    if (!t.scheduledDate) return selectedDate === todayStr;
-    return t.scheduledDate === selectedDate;
+    // 1. Date Filter
+    const isDateMatch = t.scheduledDate ? t.scheduledDate === selectedDate : selectedDate === todayStr;
+    if (!isDateMatch) return false;
+
+    // 2. Category Filter
+    if (activeCategoryFilter !== 'all') {
+      const taskCat = t.category || 'other'; // Handle legacy/missing categories
+      if (taskCat !== activeCategoryFilter) return false;
+    }
+
+    return true;
   }).sort((a, b) => {
     // 1. Completed First (User Request: "ראש המשימות")
     if (a.completed && !b.completed) return -1;
