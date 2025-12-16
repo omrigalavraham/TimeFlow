@@ -65,6 +65,28 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
         }
     };
 
+    // Reality Check Calculation
+    const shouldShowOverloadAlert = useMemo(() => {
+        if (!workEndTime || parseInt(duration) <= 0) return null;
+
+        const tasksMins = tasks.filter(t => !t.completed).reduce((acc, t) => acc + t.duration, 0);
+        const newTotal = tasksMins + parseInt(duration);
+        const available = getMinutesUntil(workEndTime);
+
+        if (newTotal > available) {
+            return (
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 p-3 rounded-lg text-xs flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                    <div>
+                        <span className="font-bold block mb-0.5">שים לב! זה יוצר חריגה.</span>
+                        זה יגרום לך לסיים אחרי {workEndTime}. כדאי לשקול להעביר משהו אחר למחר.
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    }, [workEndTime, duration, tasks]);
+
     return (
         <div className="p-4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors relative">
             <h2 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 -m-4 mb-4 p-4 border-b border-slate-100 dark:border-slate-800">
@@ -78,12 +100,13 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                 </div>
                 {!initialData && (
                     <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                        <button onClick={() => { setType('task'); setDuration('60'); }} className={cn("text-xs px-3 py-1 rounded-md transition-all", type === 'task' ? "bg-white dark:bg-slate-700 shadow-sm" : "opacity-50")}>משימה</button>
-                        <button onClick={() => { setType('break'); setDuration('15'); }} className={cn("text-xs px-3 py-1 rounded-md transition-all", type === 'break' ? "bg-white dark:bg-slate-700 shadow-sm" : "opacity-50")}>הפסקה</button>
+                        <button type="button" onClick={() => { setType('task'); setDuration('60'); }} className={cn("text-xs px-3 py-1 rounded-md transition-all", type === 'task' ? "bg-white dark:bg-slate-700 shadow-sm" : "opacity-50")}>משימה</button>
+                        <button type="button" onClick={() => { setType('break'); setDuration('15'); }} className={cn("text-xs px-3 py-1 rounded-md transition-all", type === 'break' ? "bg-white dark:bg-slate-700 shadow-sm" : "opacity-50")}>הפסקה</button>
                     </div>
                 )}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
+                {/* ... existing fields ... */}
                 <div>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">שם {type === 'task' ? 'המשימה' : 'ההפסקה'}</label>
                     <input
@@ -94,8 +117,7 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                         className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     />
                 </div>
-
-                {/* Category Selector */}
+                {/* ... Category Selector ... */}
                 {type === 'task' && (
                     <div>
                         <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">קטגוריה</label>
@@ -129,6 +151,7 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                         </div>
                     </div>
                 )}
+                {/* ... Rest of fields ... */}
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -209,25 +232,7 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                     )}
                 </button>
 
-                {/* Reality Check Alert */}
-                {workEndTime && parseInt(duration) > 0 && (() => {
-                    const tasksMins = tasks.filter(t => !t.completed).reduce((acc, t) => acc + t.duration, 0);
-                    const newTotal = tasksMins + parseInt(duration);
-                    const available = getMinutesUntil(workEndTime);
-
-                    if (newTotal > available) {
-                        return (
-                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 p-3 rounded-lg text-xs flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
-                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                                <div>
-                                    <span className="font-bold block mb-0.5">שים לב! זה יוצר חריגה.</span>
-                                    זה יגרום לך לסיים אחרי {workEndTime}. כדאי לשקול להעביר משהו אחר למחר.
-                                </div>
-                            </div>
-                        )
-                    }
-                    return null;
-                })()}
+                {shouldShowOverloadAlert}
             </form>
         </div>
     );
