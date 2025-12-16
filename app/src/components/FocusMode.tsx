@@ -117,13 +117,6 @@ export default function FocusMode() {
                             return newElapsed;
                         });
                     }
-
-                    // Smart Insights (Only in Focus Mode)
-                    if (mode === 'focus' && activeTask) {
-                        const midPoint = (activeTask.duration * 60) / 2;
-                        if (next === midPoint) setInsight("חצי דרך מאחוריך! 💪");
-                        if (next === 60) setInsight("דקה אחרונה! תן בראש 🔥");
-                    }
                     return next;
                 });
             }, 1000);
@@ -136,7 +129,19 @@ export default function FocusMode() {
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [isActive, isPaused, timeLeft, mode, activeTask]);
+    }, [isActive, isPaused, timeLeft, mode, activeTask]); // Note: relying on timeLeft in deps might cause re-creation of interval every second.
+
+    // Better to use functional update for timeLeft so we don't need it in deps, OR keep it as is if we want exact control.
+    // The original code had timeLeft in deps, so interval was recreated every tick. That's fine for now, let's just fix the side effect.
+
+    // Insight Logic moved to Effect
+    useEffect(() => {
+        if (mode === 'focus' && activeTask && timeLeft > 0) {
+            const midPoint = (activeTask.duration * 60) / 2;
+            if (timeLeft === midPoint) setInsight("חצי דרך מאחוריך! 💪");
+            if (timeLeft === 60) setInsight("דקה אחרונה! תן בראש 🔥");
+        }
+    }, [timeLeft, mode, activeTask]);
 
     // Clear insight after 5 seconds
     useEffect(() => {
