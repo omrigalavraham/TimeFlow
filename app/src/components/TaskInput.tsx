@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStore, Priority } from '@/lib/store';
-import { Plus, Clock, AlertCircle, Repeat, Coffee, X } from 'lucide-react';
+import { Plus, Clock, AlertCircle, Repeat, Coffee, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getMinutesUntil } from '@/lib/planner';
 
 // Note: We need to import Task type
 import { Task } from '@/lib/store';
@@ -16,6 +17,8 @@ interface TaskInputProps {
 export default function TaskInput({ onClose, initialData }: TaskInputProps) {
     const addTask = useStore((state) => state.addTask);
     const updateTask = useStore((state) => state.updateTask);
+    const tasks = useStore((state) => state.tasks);
+    const workEndTime = useStore((state) => state.workEndTime);
 
     // State initialization
     const [title, setTitle] = useState(initialData?.title || '');
@@ -162,11 +165,30 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                         'שמור שינויים'
                     ) : (
                         <>
-                            {type === 'task' ? <Plus size={18} /> : <Coffee size={18} />}
                             {type === 'task' ? 'הוסף לרשימה' : 'שבץ הפסקה'}
                         </>
                     )}
                 </button>
+
+                {/* Reality Check Alert */}
+                {workEndTime && parseInt(duration) > 0 && (() => {
+                    const tasksMins = tasks.filter(t => !t.completed).reduce((acc, t) => acc + t.duration, 0);
+                    const newTotal = tasksMins + parseInt(duration);
+                    const available = getMinutesUntil(workEndTime);
+
+                    if (newTotal > available) {
+                        return (
+                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 p-3 rounded-lg text-xs flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
+                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                <div>
+                                    <span className="font-bold block mb-0.5">שים לב! זה יוצר חריגה.</span>
+                                    זה יגרום לך לסיים אחרי {workEndTime}. כדאי לשקול להעביר משהו אחר למחר.
+                                </div>
+                            </div>
+                        )
+                    }
+                    return null;
+                })()}
             </form>
         </div>
     );

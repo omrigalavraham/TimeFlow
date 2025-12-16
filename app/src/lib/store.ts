@@ -55,6 +55,12 @@ interface State {
     xp: number;
     level: number;
     addXp: (amount: number) => void;
+
+    // Reality Check / Daily Plan
+    dayStatus: 'planning' | 'active' | 'completed';
+    setDayStatus: (status: 'planning' | 'active' | 'completed') => void;
+    workEndTime: string | null; // "17:30"
+    setWorkEndTime: (time: string | null) => void;
 }
 
 export const useStore = create<State>((set, get) => ({
@@ -63,8 +69,15 @@ export const useStore = create<State>((set, get) => ({
     streak: 0,
     completionData: null,
     activeTaskId: null,
-    editingTaskId: null, // New state
+    editingTaskId: null,
     selectedDate: getToday(),
+
+    // New Defaults
+    dayStatus: 'planning', // Starts in planning mode every open? Or persists? Let's default to planning implies "Needs plan".
+    workEndTime: null,
+
+    setDayStatus: (status) => set({ dayStatus: status }),
+    setWorkEndTime: (time) => set({ workEndTime: time }),
 
     setSelectedDate: (date) => set({ selectedDate: date }),
     setActiveTask: (id) => set({ activeTaskId: id }),

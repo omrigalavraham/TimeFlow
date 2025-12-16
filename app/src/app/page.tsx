@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import WeeklyTabs from '@/components/WeeklyTabs';
 import TaskCompletionModal from "@/components/TaskCompletionModal";
 import { Plus } from 'lucide-react';
-import DailySummaryWizard from '@/components/DailySummaryWizard';
+import DailyPlanWizard from '@/components/DailyPlanWizard';
 
 export default function Home() {
   const { tasks, scheduleTasks, selectedDate, editingTaskId, setEditingTask } = useStore();
@@ -108,23 +108,35 @@ export default function Home() {
 
           {/* Actions */}
           <div className="space-y-3">
-            <DailySummaryWizard />
+            {/* Show Daily Plan Wizard if in Planning Mode */}
+            <DailyPlanWizard />
 
-            <button
-              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-sm hover:bg-indigo-700 transition-colors transform hover:scale-[1.02] active:scale-95"
-              onClick={() => scheduleTasks('eat-the-frog')}
-            >
-              ✨ צור לו"ז (אכול את הצפרדע)
-            </button>
-            <button
-              className="w-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 py-3 rounded-xl font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors transform hover:scale-[1.02] active:scale-95"
-              onClick={() => scheduleTasks('snowball')}
-            >
-              ❄️ צור לו"ז (כדור שלג)
-            </button>
+            {/* Legacy/Manual Scheduling Buttons - Maybe hide these if Wizard handles it? 
+                Let's keep them but make them less prominent or secondary. 
+                Actually, the user asked to REPLACE the buttons with one "Create Schedule" button in the wizard.
+                So in planning mode, the wizard handles it. In active mode, maybe we don't need them visible constantly?
+                Let's keep them as "Manual Overrides" for now.
+            */}
 
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-              <LifeHappenedModal />
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">כלים נוספים</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  className="bg-white dark:bg-slate-800 text-xs py-2 rounded-lg border hover:bg-slate-50"
+                  onClick={() => scheduleTasks('eat-the-frog')}
+                >
+                  🐸 צפרדע
+                </button>
+                <button
+                  className="bg-white dark:bg-slate-800 text-xs py-2 rounded-lg border hover:bg-slate-50"
+                  onClick={() => scheduleTasks('snowball')}
+                >
+                  ❄️ כדור שלג
+                </button>
+              </div>
+              <div className="mt-2">
+                <LifeHappenedModal />
+              </div>
             </div>
           </div>
         </div>
