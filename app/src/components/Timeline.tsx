@@ -47,9 +47,57 @@ const TaskCardOverlay = ({ task }: { task: Task }) => {
 }
 
 export default function Timeline({ tasks }: Props) {
-    // ... existing hook setup ...
     const reorderTasks = useStore((state) => state.reorderTasks);
-    // ...
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [dragWidth, setDragWidth] = useState<number | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
+            },
+        }),
+        useSensor(KeyboardSensor)
+    );
+
+    const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+
+    const handleDragStart = (event: any) => {
+        setActiveId(event.active.id);
+        if (containerRef.current) {
+            setDragWidth(containerRef.current.offsetWidth);
+        }
+    };
+
+    const handleDragEnd = (event: any) => {
+        const { active, over } = event;
+
+        if (active.id !== over.id) {
+            const oldIndex = tasks.findIndex((t) => t.id === active.id);
+            const newIndex = tasks.findIndex((t) => t.id === over.id);
+
+            const newOrder = arrayMove(tasks, oldIndex, newIndex);
+            reorderTasks(newOrder);
+        }
+
+        setActiveId(null);
+        setDragWidth(null);
+    };
+
+    if (tasks.length === 0) {
+        return (
+            <div className="text-center py-20 text-slate-400">
+                <p>אין משימות ליום זה. 🎉</p>
+            </div>
+        )
+    }
 
     return (
         <DndContext
