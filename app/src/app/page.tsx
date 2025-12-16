@@ -90,9 +90,12 @@ export default function Home() {
         {/* Main Area: Timeline (First on Mobile) */}
         <div className="md:col-span-8 flex flex-col min-h-0 bg-white dark:bg-slate-900/50 rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100 dark:border-slate-800/50 backdrop-blur-sm order-1 md:order-2 h-[60vh] md:h-auto">
           {/* Header with Weekly Tabs */}
-          <div className="mb-4 md:mb-6">
-            <h2 className="text-xl md:text-2xl font-black mb-4 px-2">הלו"ז שלי</h2>
-            <WeeklyTabs />
+          <div className="mb-4 md:mb-6 space-y-4">
+            <div className="flex justify-between items-start">
+              <h2 className="text-xl md:text-2xl font-black px-2">הלו"ז שלי</h2>
+              <WeeklyTabs />
+            </div>
+            <CategoryTabs />
           </div>
 
           {/* Scrollable Timeline */}
