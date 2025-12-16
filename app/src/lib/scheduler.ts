@@ -79,6 +79,9 @@ const minutesToTime = (totalMinutes: number): string => {
 export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
     // 1. Separate fixed (pinned) tasks vs flexible tasks
     const pinnedTasks = tasks.filter(t => t.startTime);
+    // Only schedule flexible tasks that are NOT already breaks (we generate breaks dynamically)
+    // Actually, if a user manually added a break, we should respect it. 
+    // But for auto-breaks, we generate them.
     const flexibleTasks = tasks.filter(t => !t.startTime);
 
     // Sort pinned by time
@@ -86,17 +89,59 @@ export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
 
     const scheduledFlexible: Task[] = [];
     let currentTimeMinutes = timeToMinutes(startTime);
+    let consecutiveWorkMinutes = 0;
 
     // 2. Iterate and fill gaps
-    // This is a simple greedy slot filler.
-    // For each flexible task, find the first gap big enough.
-
-    // Simplification: We just try to fit them in order. 
-    // We iterate flexibility and jump over pinned tasks.
-
     let flexIndex = 0;
 
     while (flexIndex < flexibleTasks.length) {
+        // Smart Break Check
+        if (consecutiveWorkMinutes >= 90) {
+            // Find gap for break
+            const breakDuration = 15;
+            let breakScheduled = false;
+
+            // Check collision with next pinned task for Break
+            const nextPinnedForBreak = pinnedTasks.find(p => timeToMinutes(p.startTime!) >= currentTimeMinutes);
+            if (nextPinnedForBreak) {
+                const timeToPinned = timeToMinutes(nextPinnedForBreak.startTime!) - currentTimeMinutes;
+                if (timeToPinned >= breakDuration) {
+                    // Fits!
+                    scheduledFlexible.push({
+                        id: `break-${crypto.randomUUID()}`,
+                        title: 'הפסקת התרעננות ☕',
+                        duration: breakDuration,
+                        priority: 'must', // High priority to ensure it stays?
+                        type: 'break',
+                        scheduledDate: tasks[0]?.scheduledDate, // Use same date
+                        completed: false,
+                        startTime: minutesToTime(currentTimeMinutes)
+                    } as Task);
+                    currentTimeMinutes += breakDuration;
+                    consecutiveWorkMinutes = 0; // Reset counter
+                    breakScheduled = true;
+                }
+                // If doesn't fit, we might skip break or force it? 
+                // For MVP, if it doesn't fit before pinned, we just don't schedule it *here*.
+                // We'll continue and maybe schedule it after pinned.
+            } else {
+                // No pinned ahead
+                scheduledFlexible.push({
+                    id: `break-${crypto.randomUUID()}`,
+                    title: 'הפסקת התרעננות ☕',
+                    duration: breakDuration,
+                    priority: 'must',
+                    type: 'break',
+                    scheduledDate: tasks[0]?.scheduledDate,
+                    completed: false,
+                    startTime: minutesToTime(currentTimeMinutes)
+                } as Task);
+                currentTimeMinutes += breakDuration;
+                consecutiveWorkMinutes = 0;
+                breakScheduled = true;
+            }
+        }
+
         const task = flexibleTasks[flexIndex];
         const taskDuration = task.duration + (task.duration > 60 ? 10 : 0); // Buffer
 
@@ -110,16 +155,22 @@ export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
                 // Fits in gap!
                 scheduledFlexible.push({ ...task, startTime: minutesToTime(currentTimeMinutes) });
                 currentTimeMinutes += taskDuration;
+                consecutiveWorkMinutes += task.duration; // Add actual work minutes
                 flexIndex++;
             } else {
                 // Doesn't fit, jump to after this pinned task
-                const pinnedEnd = timeToMinutes(nextPinned.startTime!) + nextPinned.duration; // No buffer after pinned? Maybe.
+                const pinnedEnd = timeToMinutes(nextPinned.startTime!) + nextPinned.duration;
                 currentTimeMinutes = Math.max(currentTimeMinutes, pinnedEnd);
+                // Reset consecutive minutes if we jumped over a pinned task (assuming pinned task might be a break or context switch)
+                // Or should we count pinned task duration?
+                // Let's reset for simplicity, assuming pinned tasks break the flow or are meetings.
+                consecutiveWorkMinutes = 0;
             }
         } else {
             // No more pinned tasks ahead, straight shot
             scheduledFlexible.push({ ...task, startTime: minutesToTime(currentTimeMinutes) });
             currentTimeMinutes += taskDuration;
+            consecutiveWorkMinutes += task.duration;
             flexIndex++;
         }
 
@@ -127,8 +178,7 @@ export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
         if (currentTimeMinutes > 24 * 60) break;
     }
 
-    // Return merged list (preserving original sort? No, new schedule implies new order usually)
-    // But we should probably return combined list sorted by time
+    // Return merged list
     const all = [...pinnedTasks, ...scheduledFlexible];
     all.sort((a, b) => timeToMinutes(a.startTime!) - timeToMinutes(b.startTime!));
 

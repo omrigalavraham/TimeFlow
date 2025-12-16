@@ -80,15 +80,25 @@ export default function FocusMode() {
 
     // Initialize Timer
     useEffect(() => {
-        if (activeTask && mode === 'focus') {
-            setTimeLeft(activeTask.duration * 60);
-            setElapsedTime(0); // Reset elapsed
-            setIsActive(true);
-            setIsPaused(false);
-            setIsMinimized(false);
-            setInsight(null);
+        if (activeTask) {
+            if (activeTask.type === 'break') {
+                setMode('break');
+                setTimeLeft(activeTask.duration * 60);
+                setElapsedTime(0);
+                setIsActive(true);
+                setIsPaused(false);
+                setIsMinimized(false);
+                setInsight(null);
+            } else if (mode === 'focus') {
+                setTimeLeft(activeTask.duration * 60);
+                setElapsedTime(0); // Reset elapsed
+                setIsActive(true);
+                setIsPaused(false);
+                setIsMinimized(false);
+                setInsight(null);
+            }
         }
-    }, [activeTaskId, mode]);
+    }, [activeTaskId, mode]); // activeTaskId change triggers this. If mode changes manually, we handle logic elsewhere.
 
     // Timer Tick
     useEffect(() => {
@@ -394,6 +404,12 @@ export default function FocusMode() {
                 </div>
             )}
 
+            {/* Break Duration Selector Modal */}
+            {showThemeSelector === 'break' && ( // Reusing state logic slightly hacky, but cleaner to make a new one? Let's make a new one.
+                // Actually, let's add a new state for break menu.
+                null
+            )}
+
             <div className="relative z-10 w-full max-w-2xl px-8 text-center space-y-12">
 
                 {/* Task Title */}
@@ -416,7 +432,41 @@ export default function FocusMode() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center justify-center gap-6">
+                <div className="flex items-center justify-center gap-6 relative">
+                    {/* Break Button with Menu */}
+                    <div className="relative group">
+                        <button
+                            className="p-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-110 active:scale-95 shadow-sm"
+                            title="צא להפסקה"
+                        >
+                            <Coffee size={32} />
+                        </button>
+                        {/* Hover Menu for Break Options */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 bg-white dark:bg-slate-900 p-2 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-bottom">
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">קח הפסקה</div>
+                            <div className="space-y-1">
+                                <button onClick={() => startBreak(5)} className="w-full text-right px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-sm flex items-center justify-between">
+                                    <span>⚡ התרעננות</span>
+                                    <span className="text-slate-400">5 דק'</span>
+                                </button>
+                                <button onClick={() => startBreak(15)} className="w-full text-right px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-sm flex items-center justify-between">
+                                    <span>☕ קפה</span>
+                                    <span className="text-slate-400">15 דק'</span>
+                                </button>
+                                <button onClick={() => startBreak(30)} className="w-full text-right px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-sm flex items-center justify-between">
+                                    <span>🍱 צהריים</span>
+                                    <span className="text-slate-400">30 דק'</span>
+                                </button>
+                                <button onClick={() => {
+                                    const m = prompt("כמה דקות הפסקה?");
+                                    if (m) startBreak(parseInt(m));
+                                }} className="w-full text-right px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-sm flex items-center justify-between text-indigo-500">
+                                    <span>✏️ מותאם אישית</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <button
                         onClick={() => setIsPaused(!isPaused)}
                         className="p-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-110 active:scale-95 shadow-sm"

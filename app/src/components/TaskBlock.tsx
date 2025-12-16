@@ -210,22 +210,26 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                                     className="p-2 hover:bg-white dark:hover:bg-slate-700 text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110"
                                     title="ערוך משימה"
                                 >
-                                    {/* We need an import for Edit/Pencil */}
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
                                 </button>
-
-                                {/* Focus Mode */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        useStore.getState().setActiveTask(task.id);
-                                    }}
-                                    className="p-2 hover:bg-white dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110"
-                                    title="כנס לפוקוס"
-                                >
-                                    <Play size={20} className="fill-current" />
-                                </button>
                             </>
+                        )}
+
+                        {/* Focus Mode vs Start Break (Available for all uncompleted) */}
+                        {!task.completed && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    useStore.getState().setActiveTask(task.id);
+                                }}
+                                className={cn(
+                                    "p-2 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110",
+                                    task.type === 'break' ? "text-teal-600 dark:text-teal-400" : "text-purple-600 dark:text-purple-400"
+                                )}
+                                title={task.type === 'break' ? "התחל הפסקה" : "כנס לפוקוס"}
+                            >
+                                {task.type === 'break' ? <Coffee size={20} /> : <Play size={20} className="fill-current" />}
+                            </button>
                         )}
 
                         {/* Complete Button */}
