@@ -237,11 +237,14 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (!task.completed) {
-                                    // Breaks complete immediately without modal? 
-                                    // For now, let's keep consistent behavior or maybe skip modal for breaks?
-                                    // Store's openCompletionModal sets specific modal data. 
-                                    // If we want simple toggle for breaks, we can skip modal.
                                     if (task.type === 'break') {
+                                        // Visual Feedback for Break Completion
+                                        confetti({
+                                            particleCount: 50,
+                                            spread: 60,
+                                            origin: { y: 0.7 },
+                                            colors: ['#2dd4bf', '#0d9488'] // Teal colors
+                                        });
                                         toggleTaskCompletion(task.id);
                                     } else {
                                         useStore.getState().openCompletionModal(task.id);
@@ -256,6 +259,7 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                                     ? (task.type === 'break' ? "text-teal-600 bg-teal-100 dark:bg-teal-900/30" : "text-green-600 bg-green-100 dark:bg-green-900/30")
                                     : "text-slate-500 hover:text-green-600 hover:bg-white dark:hover:bg-slate-700"
                             )}
+                            title={task.completed ? "סמן כלא הושלם" : "סמן כהושלם"}
                         >
                             <CheckCircle size={20} />
                         </button>
