@@ -13,6 +13,7 @@ import TaskCompletionModal from "@/components/TaskCompletionModal";
 import { Plus } from 'lucide-react';
 import DailyPlanWizard from '@/components/DailyPlanWizard';
 import DailySummaryWizard from '@/components/DailySummaryWizard';
+import CategoryTabs from '@/components/CategoryTabs';
 
 export default function Home() {
   const { tasks, scheduleTasks, selectedDate, editingTaskId, setEditingTask, dayStatus } = useStore();

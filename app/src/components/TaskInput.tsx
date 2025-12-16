@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useStore, Priority } from '@/lib/store';
+import { useStore, Priority, Category } from '@/lib/store';
 import { Plus, Clock, AlertCircle, Repeat, Coffee, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getMinutesUntil } from '@/lib/planner';
+import { CATEGORY_CONFIG } from './CategoryTabs';
 
-// Note: We need to import Task type
 import { Task } from '@/lib/store';
 
 interface TaskInputProps {
@@ -26,7 +26,8 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
     const [priority, setPriority] = useState<Priority>(initialData?.priority || 'must');
     const [recurrence, setRecurrence] = useState<'daily' | 'weekly' | ''>(initialData?.recurrence || '');
     const [type, setType] = useState<'task' | 'break'>(initialData?.type || 'task');
-    const [startTime, setStartTime] = useState(initialData?.startTime || ''); // New: Manual Start Time
+    const [startTime, setStartTime] = useState(initialData?.startTime || '');
+    const [category, setCategory] = useState<Category>(initialData?.category || 'other');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,7 +40,8 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                 duration: parseInt(duration),
                 priority,
                 recurrence: recurrence || undefined,
-                startTime: startTime || undefined // If empty string, it might be undefined? Or null? Let's send undefined to clear if needed, or handle clearing logic separately. For now, overwrite.
+                startTime: startTime || undefined,
+                category: category || undefined
             });
             if (onClose) onClose();
         } else {
@@ -50,7 +52,8 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                 priority,
                 recurrence: recurrence || undefined,
                 type,
-                startTime: startTime || undefined
+                startTime: startTime || undefined,
+                category: category || 'other'
             });
 
             // Reset for batch entry only if NOT editing
@@ -58,6 +61,7 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
             setDuration(type === 'break' ? '15' : '60');
             setRecurrence('');
             setStartTime('');
+            setCategory('other');
         }
     };
 
@@ -90,6 +94,38 @@ export default function TaskInput({ onClose, initialData }: TaskInputProps) {
                         className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     />
                 </div>
+
+                {/* Category Selector */}
+                {type === 'task' && (
+                    <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">קטגוריה</label>
+                        <div className="flex flex-wrap gap-2">
+                            {(Object.keys(CATEGORY_CONFIG) as Array<Category | 'all'>)
+                                .filter(c => c !== 'all')
+                                .map(cat => {
+                                    const config = CATEGORY_CONFIG[cat];
+                                    const Icon = config.icon;
+                                    const isSelected = category === cat;
+                                    return (
+                                        <button
+                                            key={cat}
+                                            type="button"
+                                            onClick={() => setCategory(cat as Category)}
+                                            className={cn(
+                                                "p-2 rounded-lg transition-all border",
+                                                isSelected
+                                                    ? cn("border-transparent ring-2 ring-offset-1 ring-slate-200 dark:ring-slate-700", config.color)
+                                                    : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400 hover:bg-slate-100"
+                                            )}
+                                            title={config.label}
+                                        >
+                                            <Icon size={18} />
+                                        </button>
+                                    )
+                                })}
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>

@@ -7,39 +7,16 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
+import { CATEGORY_CONFIG } from './CategoryTabs';
 
 interface Props {
     task: Task;
     isOverlay?: boolean;
 }
 
-const getTaskColor = (id: string) => {
-    const colors = [
-        'bg-rose-100 dark:bg-rose-900/20',
-        'bg-orange-100 dark:bg-orange-900/20',
-        'bg-amber-100 dark:bg-amber-900/20',
-        'bg-emerald-100 dark:bg-emerald-900/20',
-        'bg-cyan-100 dark:bg-cyan-900/20',
-        'bg-blue-100 dark:bg-blue-900/20',
-        'bg-indigo-100 dark:bg-indigo-900/20',
-        'bg-violet-100 dark:bg-violet-900/20',
-        'bg-fuchsia-100 dark:bg-fuchsia-900/20',
-    ];
-    // Simple hash
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-        hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-};
-
 const getPriorityColor = (priority: Task['priority']) => {
     switch (priority) {
         case 'must': return 'bg-red-500 shadow-red-500/50';
-        case 'should': return 'bg-amber-500 shadow-amber-500/50'; // Changing Should to Amber for better contrast with Red? Or keep Teal? User only asked for Red for urgent. I'll keep Teal or maybe Orange? Let's stick to user request Red for Must. Actually, Traffic light logic (Red/Yellow/Green) is popular. Let's make Should Orange/Amber and Could Green/Blue? 
-        // User request: "Change the indication colors so red blinking is the urgent". 
-        // I will change Must to Red. I'll leave others or maybe tweak slightly for harmony.
-        // Let's go with Red / Blue / Gray for now to be safe, or Red / Teal / Gray.
         case 'should': return 'bg-blue-500 shadow-blue-500/50';
         case 'could': return 'bg-slate-400 shadow-slate-400/50';
     }
@@ -59,9 +36,27 @@ export default function TaskBlock({ task, isOverlay }: Props) {
         transition,
     };
 
+    // Resolve Category Config
+    const categoryKey = task.category || 'other';
+    const catConfig = CATEGORY_CONFIG[categoryKey] || CATEGORY_CONFIG['other'];
+    const CategoryIcon = catConfig.icon;
+
+    // Define background based on category
+    // We map category to specific bg/border colors, slightly lighter than the active tab colors for content background
+    const getCategoryStyles = (cat: string) => {
+        switch (cat) {
+            case 'work': return "bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/30";
+            case 'study': return "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30";
+            case 'home': return "bg-orange-50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/30";
+            case 'health': return "bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30";
+            case 'social': return "bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30";
+            default: return "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700";
+        }
+    }
+
     const taskColor = task.type === 'break'
         ? "bg-teal-50 dark:bg-teal-900/10 border-teal-100 dark:border-teal-900/30"
-        : getTaskColor(task.id);
+        : getCategoryStyles(categoryKey);
 
     // Logic for Priority Light
     let priorityLight = getPriorityColor(task.priority);
@@ -170,9 +165,18 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                                     </span>
                                 )}
 
-                                {task.type === 'break' && (
+                                {task.type === 'break' ? (
                                     <span className="text-teal-600 text-xs bg-teal-100 dark:bg-teal-900/30 px-1.5 py-0.5 rounded">
                                         מנוחה
+                                    </span>
+                                ) : (
+                                    // Category Badge
+                                    <span className={cn(
+                                        "flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] opacity-80",
+                                        catConfig?.color ? catConfig.color.replace('text-', 'text-').replace('bg-', 'bg-opacity-50 bg-') : "bg-slate-100"
+                                    )}>
+                                        {CategoryIcon && <CategoryIcon size={12} />}
+                                        {catConfig?.label}
                                     </span>
                                 )}
                             </div>
