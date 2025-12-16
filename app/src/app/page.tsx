@@ -14,7 +14,7 @@ import { Plus } from 'lucide-react';
 import DailyPlanWizard from '@/components/DailyPlanWizard';
 
 export default function Home() {
-  const { tasks, scheduleTasks, selectedDate, editingTaskId, setEditingTask } = useStore();
+  const { tasks, scheduleTasks, selectedDate, editingTaskId, setEditingTask, dayStatus } = useStore();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const [isInputOpen, setIsInputOpen] = useState(false); // Collapsible State
@@ -52,6 +52,17 @@ export default function Home() {
   const filteredTasks = tasks.filter(t => {
     if (!t.scheduledDate) return selectedDate === todayStr;
     return t.scheduledDate === selectedDate;
+  }).sort((a, b) => {
+    // 1. Completed First (User Request: "ראש המשימות")
+    if (a.completed && !b.completed) return -1;
+    if (!a.completed && b.completed) return 1;
+
+    // 2. Chronological by Start Time
+    if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+    if (a.startTime) return -1; // Schedules first
+    if (b.startTime) return 1;
+
+    return 0;
   });
 
   const editingTask = tasks.find(t => t.id === editingTaskId);
@@ -109,7 +120,7 @@ export default function Home() {
           {/* Actions */}
           <div className="space-y-3">
             {/* Show Daily Plan Wizard if in Planning Mode */}
-            <DailyPlanWizard />
+            {dayStatus === 'planning' && <DailyPlanWizard />}
 
             {/* Legacy/Manual Scheduling Buttons - Maybe hide these if Wizard handles it? 
                 Let's keep them but make them less prominent or secondary. 
