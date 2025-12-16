@@ -233,26 +233,32 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                         )}
 
                         {/* Complete Button */}
-                        {task.type !== 'break' && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!task.completed) {
-                                        useStore.getState().openCompletionModal(task.id);
-                                    } else {
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (!task.completed) {
+                                    // Breaks complete immediately without modal? 
+                                    // For now, let's keep consistent behavior or maybe skip modal for breaks?
+                                    // Store's openCompletionModal sets specific modal data. 
+                                    // If we want simple toggle for breaks, we can skip modal.
+                                    if (task.type === 'break') {
                                         toggleTaskCompletion(task.id);
+                                    } else {
+                                        useStore.getState().openCompletionModal(task.id);
                                     }
-                                }}
-                                className={cn(
-                                    "p-2 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110",
-                                    task.completed
-                                        ? "text-green-600 bg-green-100 dark:bg-green-900/30"
-                                        : "text-slate-500 hover:text-green-600 hover:bg-white dark:hover:bg-slate-700"
-                                )}
-                            >
-                                <CheckCircle size={20} />
-                            </button>
-                        )}
+                                } else {
+                                    toggleTaskCompletion(task.id);
+                                }
+                            }}
+                            className={cn(
+                                "p-2 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110",
+                                task.completed
+                                    ? (task.type === 'break' ? "text-teal-600 bg-teal-100 dark:bg-teal-900/30" : "text-green-600 bg-green-100 dark:bg-green-900/30")
+                                    : "text-slate-500 hover:text-green-600 hover:bg-white dark:hover:bg-slate-700"
+                            )}
+                        >
+                            <CheckCircle size={20} />
+                        </button>
 
                         {/* Delete Button */}
                         <button

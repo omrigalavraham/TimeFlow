@@ -255,11 +255,18 @@ export const useStore = create<State>((set, get) => ({
         if (!task) return;
         const newCompleted = !task.completed;
 
-        set(state => ({
-            tasks: state.tasks.map(t => t.id === id ? { ...t, completed: newCompleted } : t),
-            streak: newCompleted ? state.streak + 1 : Math.max(0, state.streak - 1),
-            xp: newCompleted ? state.xp + 50 : state.xp
-        }));
+        // Logic split: Breaks don't count for Streak/XP
+        if (task.type === 'break') {
+            set(state => ({
+                tasks: state.tasks.map(t => t.id === id ? { ...t, completed: newCompleted } : t)
+            }));
+        } else {
+            set(state => ({
+                tasks: state.tasks.map(t => t.id === id ? { ...t, completed: newCompleted } : t),
+                streak: newCompleted ? state.streak + 1 : Math.max(0, state.streak - 1),
+                xp: newCompleted ? state.xp + 50 : state.xp
+            }));
+        }
 
         if (!supabase) return;
         await supabase.from('tasks').update({ completed: newCompleted }).eq('id', id);
