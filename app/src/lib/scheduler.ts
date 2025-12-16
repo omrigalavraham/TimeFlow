@@ -63,26 +63,76 @@ export const scheduleTasks = (tasks: Task[], strategy: Strategy = 'eat-the-frog'
     return assignTimes(sortedTasks, startTime);
 };
 
+// Helper to convert HH:MM to minutes from midnight
+const timeToMinutes = (time: string): number => {
+    const [hours, mins] = time.split(':').map(Number);
+    return hours * 60 + mins;
+};
+
+// Helper minutes to HH:MM
+const minutesToTime = (totalMinutes: number): string => {
+    const hours = Math.floor(totalMinutes / 60) % 24;
+    const mins = totalMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+};
+
 export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
-    let currentTime = startTime;
+    // 1. Separate fixed (pinned) tasks vs flexible tasks
+    const pinnedTasks = tasks.filter(t => t.startTime);
+    const flexibleTasks = tasks.filter(t => !t.startTime);
 
-    return tasks.map((task) => {
-        const itemStartTime = currentTime;
-        let duration = task.duration;
+    // Sort pinned by time
+    pinnedTasks.sort((a, b) => timeToMinutes(a.startTime!) - timeToMinutes(b.startTime!));
 
-        // Add buffer if task is long (> 60 min)
-        let buffer = 0;
-        if (duration > 60) {
-            buffer = 10;
+    const scheduledFlexible: Task[] = [];
+    let currentTimeMinutes = timeToMinutes(startTime);
+
+    // 2. Iterate and fill gaps
+    // This is a simple greedy slot filler.
+    // For each flexible task, find the first gap big enough.
+
+    // Simplification: We just try to fit them in order. 
+    // We iterate flexibility and jump over pinned tasks.
+
+    let flexIndex = 0;
+
+    while (flexIndex < flexibleTasks.length) {
+        const task = flexibleTasks[flexIndex];
+        const taskDuration = task.duration + (task.duration > 60 ? 10 : 0); // Buffer
+
+        // Check collision with next pinned task
+        const nextPinned = pinnedTasks.find(p => timeToMinutes(p.startTime!) >= currentTimeMinutes);
+
+        if (nextPinned) {
+            const timeToPinned = timeToMinutes(nextPinned.startTime!) - currentTimeMinutes;
+
+            if (timeToPinned >= taskDuration) {
+                // Fits in gap!
+                scheduledFlexible.push({ ...task, startTime: minutesToTime(currentTimeMinutes) });
+                currentTimeMinutes += taskDuration;
+                flexIndex++;
+            } else {
+                // Doesn't fit, jump to after this pinned task
+                const pinnedEnd = timeToMinutes(nextPinned.startTime!) + nextPinned.duration; // No buffer after pinned? Maybe.
+                currentTimeMinutes = Math.max(currentTimeMinutes, pinnedEnd);
+            }
+        } else {
+            // No more pinned tasks ahead, straight shot
+            scheduledFlexible.push({ ...task, startTime: minutesToTime(currentTimeMinutes) });
+            currentTimeMinutes += taskDuration;
+            flexIndex++;
         }
 
-        currentTime = addMinutes(currentTime, duration + buffer);
+        // Brake fail-safe (e.g. if we go past midnight or stuck)
+        if (currentTimeMinutes > 24 * 60) break;
+    }
 
-        return {
-            ...task,
-            startTime: itemStartTime,
-        };
-    });
+    // Return merged list (preserving original sort? No, new schedule implies new order usually)
+    // But we should probably return combined list sorted by time
+    const all = [...pinnedTasks, ...scheduledFlexible];
+    all.sort((a, b) => timeToMinutes(a.startTime!) - timeToMinutes(b.startTime!));
+
+    return all;
 };
 
 export const shiftSchedule = (tasks: Task[], delayMinutes: number): Task[] => {

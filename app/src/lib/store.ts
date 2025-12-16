@@ -29,7 +29,7 @@ interface State {
 
     // Async Actions
     fetchTasks: () => Promise<void>;
-    addTask: (task: Omit<Task, 'id' | 'completed' | 'startTime' | 'scheduledDate'> & { recurrence?: 'daily' | 'weekly', type?: 'task' | 'break' }) => void;
+    addTask: (task: Omit<Task, 'id' | 'completed' | 'scheduledDate'> & { recurrence?: 'daily' | 'weekly', type?: 'task' | 'break' }) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (id: string) => void;
     moveTaskToDate: (id: string, date: string) => void;
@@ -44,6 +44,8 @@ interface State {
     // Local UI State
     activeTaskId: string | null;
     setActiveTask: (id: string | null) => void;
+    editingTaskId: string | null; // New
+    setEditingTask: (id: string | null) => void; // New
     streak: number;
     completionData: { taskId: string; elapsedTime?: number } | null;
     openCompletionModal: (taskId: string, elapsedTime?: number) => void;
@@ -61,10 +63,12 @@ export const useStore = create<State>((set, get) => ({
     streak: 0,
     completionData: null,
     activeTaskId: null,
+    editingTaskId: null, // New state
     selectedDate: getToday(),
 
     setSelectedDate: (date) => set({ selectedDate: date }),
     setActiveTask: (id) => set({ activeTaskId: id }),
+    setEditingTask: (id) => set({ editingTaskId: id }), // New action
     openCompletionModal: (taskId, elapsedTime) => set({ completionData: { taskId, elapsedTime } }),
     closeCompletionModal: () => set({ completionData: null }),
     setTasks: (tasks) => set({ tasks }),
@@ -104,6 +108,7 @@ export const useStore = create<State>((set, get) => ({
             duration: task.duration,
             priority: task.priority,
             deadline: task.deadline,
+            start_time: task.startTime, // Pass start time if provided
             recurrence: task.recurrence,
             type: task.type || 'task',
             scheduled_date: state.selectedDate,
@@ -116,6 +121,7 @@ export const useStore = create<State>((set, get) => ({
         const optimisticTask: Task = {
             ...task,
             id: optimisticId,
+            startTime: task.startTime, // Pass start time
             scheduledDate: state.selectedDate,
             completed: false,
             type: task.type || 'task'

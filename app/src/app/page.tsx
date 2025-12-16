@@ -9,14 +9,12 @@ import { useStore } from "@/lib/store";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import WeeklyTabs from '@/components/WeeklyTabs';
-
 import TaskCompletionModal from "@/components/TaskCompletionModal";
-
-import { Plus } from 'lucide-react'; // Ensure Plus is imported
+import { Plus } from 'lucide-react';
 import DailySummaryWizard from '@/components/DailySummaryWizard';
 
 export default function Home() {
-  const { tasks, scheduleTasks, selectedDate } = useStore();
+  const { tasks, scheduleTasks, selectedDate, editingTaskId, setEditingTask } = useStore();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const [isInputOpen, setIsInputOpen] = useState(false); // Collapsible State
@@ -27,13 +25,9 @@ export default function Home() {
 
     // Auth Check
     const checkAuth = async () => {
-      // Dynamic import to avoid issues if supabase is null initially or during server render if applicable
       const { supabase } = await import('@/lib/supabase');
 
       if (!supabase) {
-        // If no supabase client (keys missing), redirect to login for now (or stay here? user asked to jump to login)
-        // Actually if keys are missing we can't login anyway. 
-        // But the User asked "Jump to login screen".
         router.push('/login');
         return;
       }
@@ -42,7 +36,6 @@ export default function Home() {
       if (!session) {
         router.push('/login');
       } else {
-        // Load tasks from Cloud
         useStore.getState().fetchTasks();
       }
     };
@@ -53,21 +46,32 @@ export default function Home() {
   if (!mounted) {
     return null;
   }
+
   // Filter tasks for the selected date
   const todayStr = new Date().toISOString().split('T')[0];
   const filteredTasks = tasks.filter(t => {
-    // Compatibility: If t.scheduledDate is missing, treat as Today (if selectedDate is Today).
-    // Or just strictly check match. 
-    // Given we just added the field, old tasks are undefined. 
-    // If we are looking at Today, show undefined ones too.
     if (!t.scheduledDate) return selectedDate === todayStr;
     return t.scheduledDate === selectedDate;
   });
+
+  const editingTask = tasks.find(t => t.id === editingTaskId);
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 overflow-hidden direction-rtl" dir="rtl">
       <FocusMode />
       <TaskCompletionModal />
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+            <TaskInput
+              initialData={editingTask}
+              onClose={() => setEditingTask(null)}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 w-full max-w-[1800px] mx-auto p-4 md:p-8 h-full">
         {/* Main Area: Timeline (First on Mobile) */}

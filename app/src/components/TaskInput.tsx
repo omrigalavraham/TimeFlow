@@ -5,38 +5,57 @@ import { useStore, Priority } from '@/lib/store';
 import { Plus, Clock, AlertCircle, Repeat, Coffee, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Note: We need to import Task type
+import { Task } from '@/lib/store';
+
 interface TaskInputProps {
     onClose?: () => void;
+    initialData?: Task; // If provided, we are in Edit Mode
 }
 
-export default function TaskInput({ onClose }: TaskInputProps) {
+export default function TaskInput({ onClose, initialData }: TaskInputProps) {
     const addTask = useStore((state) => state.addTask);
-    const [title, setTitle] = useState('');
-    const [duration, setDuration] = useState('60');
-    const [priority, setPriority] = useState<Priority>('must');
-    const [recurrence, setRecurrence] = useState<'daily' | 'weekly' | ''>('');
-    const [type, setType] = useState<'task' | 'break'>('task');
+    const updateTask = useStore((state) => state.updateTask);
+
+    // State initialization
+    const [title, setTitle] = useState(initialData?.title || '');
+    const [duration, setDuration] = useState(initialData?.duration?.toString() || '60');
+    const [priority, setPriority] = useState<Priority>(initialData?.priority || 'must');
+    const [recurrence, setRecurrence] = useState<'daily' | 'weekly' | ''>(initialData?.recurrence || '');
+    const [type, setType] = useState<'task' | 'break'>(initialData?.type || 'task');
+    const [startTime, setStartTime] = useState(initialData?.startTime || ''); // New: Manual Start Time
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim()) return;
 
-        addTask({
-            title,
-            duration: parseInt(duration),
-            priority,
-            recurrence: recurrence || undefined,
-            type
-        });
+        if (initialData) {
+            // Update Mode
+            updateTask(initialData.id, {
+                title,
+                duration: parseInt(duration),
+                priority,
+                recurrence: recurrence || undefined,
+                startTime: startTime || undefined // If empty string, it might be undefined? Or null? Let's send undefined to clear if needed, or handle clearing logic separately. For now, overwrite.
+            });
+            if (onClose) onClose();
+        } else {
+            // Add Mode
+            addTask({
+                title,
+                duration: parseInt(duration),
+                priority,
+                recurrence: recurrence || undefined,
+                type,
+                startTime: startTime || undefined
+            });
 
-        setTitle('');
-        setDuration(type === 'break' ? '15' : '60');
-        setRecurrence('');
-        // Keep priority as is or reset? Let's keep it for batch entry.
-
-        // Optional: Close on submit? Or keep open for batch?
-        // User didn't specify, but "Add Task" usually implies single shot if it's a modal/collapsible.
-        // Let's NOT close automatically for now to allow batch entry unless user asks.
+            // Reset for batch entry only if NOT editing
+            setTitle('');
+            setDuration(type === 'break' ? '15' : '60');
+            setRecurrence('');
+            setStartTime('');
+        }
     };
 
     return (
@@ -48,12 +67,14 @@ export default function TaskInput({ onClose }: TaskInputProps) {
                             <X size={18} className="text-slate-500" />
                         </button>
                     )}
-                    <span>הוספת {type === 'task' ? 'משימה' : 'הפסקה'}</span>
+                    <span>{initialData ? 'עריכת' : 'הוספת'} {type === 'task' ? 'משימה' : 'הפסקה'}</span>
                 </div>
-                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                    <button onClick={() => { setType('task'); setDuration('60'); }} className={cn("text-xs px-3 py-1 rounded-md transition-all", type === 'task' ? "bg-white dark:bg-slate-700 shadow-sm" : "opacity-50")}>משימה</button>
-                    <button onClick={() => { setType('break'); setDuration('15'); }} className={cn("text-xs px-3 py-1 rounded-md transition-all", type === 'break' ? "bg-white dark:bg-slate-700 shadow-sm" : "opacity-50")}>הפסקה</button>
-                </div>
+                {!initialData && (
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                        <button onClick={() => { setType('task'); setDuration('60'); }} className={cn("text-xs px-3 py-1 rounded-md transition-all", type === 'task' ? "bg-white dark:bg-slate-700 shadow-sm" : "opacity-50")}>משימה</button>
+                        <button onClick={() => { setType('break'); setDuration('15'); }} className={cn("text-xs px-3 py-1 rounded-md transition-all", type === 'break' ? "bg-white dark:bg-slate-700 shadow-sm" : "opacity-50")}>הפסקה</button>
+                    </div>
+                )}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -77,6 +98,18 @@ export default function TaskInput({ onClose }: TaskInputProps) {
                             value={duration}
                             onChange={(e) => setDuration(e.target.value)}
                             className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+                            <Clock size={14} /> שעה (אופציונלי)
+                        </label>
+                        <input
+                            type="time"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all ltr"
                         />
                     </div>
 
@@ -125,8 +158,14 @@ export default function TaskInput({ onClose }: TaskInputProps) {
                     type="submit"
                     className="w-full bg-slate-900 dark:bg-slate-700 text-white py-2.5 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2 font-medium"
                 >
-                    {type === 'task' ? <Plus size={18} /> : <Coffee size={18} />}
-                    {type === 'task' ? 'הוסף לרשימה' : 'שבץ הפסקה'}
+                    {initialData ? (
+                        'שמור שינויים'
+                    ) : (
+                        <>
+                            {type === 'task' ? <Plus size={18} /> : <Coffee size={18} />}
+                            {type === 'task' ? 'הוסף לרשימה' : 'שבץ הפסקה'}
+                        </>
+                    )}
                 </button>
             </form>
         </div>

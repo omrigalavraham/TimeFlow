@@ -201,6 +201,19 @@ export default function TaskBlock({ task, isOverlay }: Props) {
                                     <ArrowRightCircle size={20} />
                                 </button>
 
+                                {/* Edit Button - NEW */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        useStore.getState().setEditingTask(task.id);
+                                    }}
+                                    className="p-2 hover:bg-white dark:hover:bg-slate-700 text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 rounded-full transition-all shadow-sm active:scale-95 md:hover:scale-110"
+                                    title="ערוך משימה"
+                                >
+                                    {/* We need an import for Edit/Pencil */}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
+                                </button>
+
                                 {/* Focus Mode */}
                                 <button
                                     onClick={(e) => {
