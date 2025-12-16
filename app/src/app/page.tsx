@@ -12,6 +12,7 @@ import WeeklyTabs from '@/components/WeeklyTabs';
 import TaskCompletionModal from "@/components/TaskCompletionModal";
 import { Plus } from 'lucide-react';
 import DailyPlanWizard from '@/components/DailyPlanWizard';
+import DailySummaryWizard from '@/components/DailySummaryWizard';
 
 export default function Home() {
   const { tasks, scheduleTasks, selectedDate, editingTaskId, setEditingTask, dayStatus } = useStore();
@@ -121,6 +122,8 @@ export default function Home() {
           <div className="space-y-3">
             {/* Show Daily Plan Wizard if in Planning Mode */}
             {dayStatus === 'planning' && <DailyPlanWizard />}
+
+            <DailySummaryWizard />
 
             {/* Legacy/Manual Scheduling Buttons - Maybe hide these if Wizard handles it? 
                 Let's keep them but make them less prominent or secondary. 
