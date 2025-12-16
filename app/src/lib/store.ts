@@ -29,7 +29,7 @@ interface State {
 
     // Async Actions
     fetchTasks: () => Promise<void>;
-    addTask: (task: Omit<Task, 'id' | 'completed' | 'scheduledDate'> & { recurrence?: 'daily' | 'weekly', type?: 'task' | 'break' }) => void;
+    addTask: (task: Omit<Task, 'id' | 'completed' | 'scheduledDate'> & { recurrence?: 'daily' | 'weekly', type?: 'task' | 'break', scheduledDate?: string }) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (id: string) => void;
     moveTaskToDate: (id: string, date: string) => void;
@@ -103,6 +103,7 @@ export const useStore = create<State>((set, get) => ({
 
     addTask: async (task) => {
         const state = get();
+        const scheduledDate = task.scheduledDate || state.selectedDate; // Use provided date or fallback to selected
         const newTaskBase = {
             title: task.title,
             duration: task.duration,
@@ -111,7 +112,7 @@ export const useStore = create<State>((set, get) => ({
             start_time: task.startTime, // Pass start time if provided
             recurrence: task.recurrence,
             type: task.type || 'task',
-            scheduled_date: state.selectedDate,
+            scheduled_date: scheduledDate,
             completed: false,
             user_id: (await supabase?.auth.getUser())?.data.user?.id
         };
@@ -122,7 +123,7 @@ export const useStore = create<State>((set, get) => ({
             ...task,
             id: optimisticId,
             startTime: task.startTime, // Pass start time
-            scheduledDate: state.selectedDate,
+            scheduledDate: scheduledDate,
             completed: false,
             type: task.type || 'task'
         };
@@ -141,7 +142,7 @@ export const useStore = create<State>((set, get) => ({
         // but loop for recurrence if needed.
 
         const entriesToInsert = [];
-        const baseDate = new Date(state.selectedDate);
+        const baseDate = new Date(scheduledDate);
 
         // 1. Primary
         entriesToInsert.push({ ...newTaskBase });
