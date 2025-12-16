@@ -404,11 +404,7 @@ export default function FocusMode() {
                 </div>
             )}
 
-            {/* Break Duration Selector Modal */}
-            {showThemeSelector === 'break' && ( // Reusing state logic slightly hacky, but cleaner to make a new one? Let's make a new one.
-                // Actually, let's add a new state for break menu.
-                null
-            )}
+
 
             <div className="relative z-10 w-full max-w-2xl px-8 text-center space-y-12">
 
