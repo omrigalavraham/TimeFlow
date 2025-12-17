@@ -6,7 +6,7 @@ import Timeline from "@/components/Timeline";
 import LifeHappenedModal from "@/components/LifeHappenedModal";
 import FocusMode from "@/components/FocusMode";
 import { useStore } from "@/lib/store";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import WeeklyTabs from '@/components/WeeklyTabs';
 import TaskCompletionModal from "@/components/TaskCompletionModal";
@@ -16,10 +16,13 @@ import DailySummaryWizard from '@/components/DailySummaryWizard';
 import CategoryTabs from '@/components/CategoryTabs';
 
 export default function Home() {
-  const { tasks, scheduleTasks, selectedDate, editingTaskId, setEditingTask, dayStatus } = useStore();
+  const { tasks, scheduleTasks, selectedDate, editingTaskId, setEditingTask, dayStatus, activeCategoryFilter } = useStore();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const [isInputOpen, setIsInputOpen] = useState(false); // Collapsible State
+
+  // Get today's date string (computed once per render, before any conditional returns)
+  const todayStr = new Date().toISOString().split('T')[0];
 
   // Hydration fix for Zustand persist
   useEffect(() => {
@@ -45,40 +48,39 @@ export default function Home() {
     checkAuth();
   }, [router]);
 
+  // useMemo must be called before any conditional returns (React Rules of Hooks)
+  const processedTasks = useMemo(() => {
+    return tasks.filter(t => {
+      // 1. Date Filter
+      const isDateMatch = t.scheduledDate ? t.scheduledDate === selectedDate : selectedDate === todayStr;
+      if (!isDateMatch) return false;
+
+      // 2. Category Filter
+      if (activeCategoryFilter !== 'all') {
+        const taskCat = t.category || 'other'; // Handle legacy/missing categories
+        if (taskCat !== activeCategoryFilter) return false;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      // 1. Completed First (User Request: "ראש המשימות")
+      if (a.completed && !b.completed) return -1;
+      if (!a.completed && b.completed) return 1;
+
+      // 2. Chronological by Start Time
+      if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+      if (a.startTime) return -1; // Schedules first
+      if (b.startTime) return 1;
+
+      return 0;
+    });
+  }, [tasks, selectedDate, activeCategoryFilter, todayStr]);
+
+  const editingTask = useMemo(() => tasks.find(t => t.id === editingTaskId), [tasks, editingTaskId]);
+
   if (!mounted) {
     return null;
   }
-
-  // Filter tasks for the selected date and category
-  const todayStr = new Date().toISOString().split('T')[0];
-  const { activeCategoryFilter } = useStore(); // Destructure filter
-
-  const filteredTasks = tasks.filter(t => {
-    // 1. Date Filter
-    const isDateMatch = t.scheduledDate ? t.scheduledDate === selectedDate : selectedDate === todayStr;
-    if (!isDateMatch) return false;
-
-    // 2. Category Filter
-    if (activeCategoryFilter !== 'all') {
-      const taskCat = t.category || 'other'; // Handle legacy/missing categories
-      if (taskCat !== activeCategoryFilter) return false;
-    }
-
-    return true;
-  }).sort((a, b) => {
-    // 1. Completed First (User Request: "ראש המשימות")
-    if (a.completed && !b.completed) return -1;
-    if (!a.completed && b.completed) return 1;
-
-    // 2. Chronological by Start Time
-    if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
-    if (a.startTime) return -1; // Schedules first
-    if (b.startTime) return 1;
-
-    return 0;
-  });
-
-  const editingTask = tasks.find(t => t.id === editingTaskId);
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 overflow-hidden direction-rtl" dir="rtl">
@@ -111,7 +113,7 @@ export default function Home() {
 
           {/* Scrollable Timeline */}
           <div className="flex-1 overflow-y-auto pr-2 pl-2 -mr-2 scrollbar-none">
-            <Timeline tasks={filteredTasks} />
+            <Timeline tasks={processedTasks} />
           </div>
         </div>
 

@@ -108,17 +108,17 @@ export const useStore = create<State>((set, get) => ({
 
         const mappedTasks: Task[] = (data || []).map((t: any) => ({
             id: t.id,
-            title: t.title,
-            duration: t.duration,
-            priority: t.priority as Priority,
+            title: t.title || "משימה ללא שם",
+            duration: Number(t.duration) || 15, // Ensure Number
+            priority: (t.priority as Priority) || 'should',
             deadline: t.deadline,
             startTime: t.start_time,
-            scheduledDate: t.scheduled_date,
-            completed: t.completed,
-            actualDuration: t.actual_duration,
+            scheduledDate: t.scheduled_date || getToday(),
+            completed: Boolean(t.completed),
+            actualDuration: t.actual_duration ? Number(t.actual_duration) : undefined,
             recurrence: t.recurrence as any,
-            type: t.type as any,
-            category: t.category as any
+            type: (t.type as any) || 'task',
+            category: (t.category as any) || 'other'
         }));
 
         set({ tasks: mappedTasks, isLoading: false });
