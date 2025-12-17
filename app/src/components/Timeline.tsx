@@ -20,19 +20,25 @@ export default function Timeline({ tasks }: Props) {
     const [dragWidth, setDragWidth] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    const pointerSensor = useSensor(PointerSensor, {
+        activationConstraint: {
+            distance: 8,
+        },
+    });
+
+    const touchSensor = useSensor(TouchSensor, {
+        activationConstraint: {
+            delay: 250,
+            tolerance: 5,
+        },
+    });
+
+    const keyboardSensor = useSensor(KeyboardSensor);
+
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 8,
-            },
-        }),
-        useSensor(TouchSensor, {
-            activationConstraint: {
-                delay: 250,
-                tolerance: 5,
-            },
-        }),
-        useSensor(KeyboardSensor)
+        pointerSensor,
+        touchSensor,
+        keyboardSensor
     );
 
     const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;

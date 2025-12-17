@@ -101,13 +101,15 @@ export default function FocusMode() {
     }, [activeTaskId, mode]); // activeTaskId change triggers this. If mode changes manually, we handle logic elsewhere.
 
     // Timer Tick
+    // Timer Tick
     useEffect(() => {
         let interval: NodeJS.Timeout;
+
+        // Active Timer
         if ((mode === 'focus' || mode === 'break') && isActive && !isPaused && timeLeft > 0) {
             interval = setInterval(() => {
                 setTimeLeft((prev) => {
                     const next = prev - 1;
-
                     // Increment elapsed only in focus mode
                     if (mode === 'focus') {
                         setElapsedTime(e => {
@@ -121,27 +123,28 @@ export default function FocusMode() {
                 });
             }, 1000);
         } else if (timeLeft === 0 && mode === 'focus' && isActive) {
-            // Overtime
-            setInsight("חריגה בזמן ⌛ - רוצה להוסיף 5 דקות?");
-            // Continue counting elapsed time in overtime
+            // Overtime Timer (Count up)
             interval = setInterval(() => {
                 setElapsedTime(e => e + 1);
             }, 1000);
         }
+
         return () => clearInterval(interval);
-    }, [isActive, isPaused, timeLeft, mode, activeTask]); // Note: relying on timeLeft in deps might cause re-creation of interval every second.
+    }, [isActive, isPaused, timeLeft, mode, activeTask]);
 
-    // Better to use functional update for timeLeft so we don't need it in deps, OR keep it as is if we want exact control.
-    // The original code had timeLeft in deps, so interval was recreated every tick. That's fine for now, let's just fix the side effect.
-
-    // Insight Logic moved to Effect
+    // Insight & Notifications Logic
     useEffect(() => {
-        if (mode === 'focus' && activeTask && timeLeft > 0) {
-            const midPoint = (activeTask.duration * 60) / 2;
-            if (timeLeft === midPoint) setInsight("חצי דרך מאחוריך! 💪");
-            if (timeLeft === 60) setInsight("דקה אחרונה! תן בראש 🔥");
+        if (mode === 'focus' && activeTask) {
+            if (timeLeft > 0) {
+                const midPoint = (activeTask.duration * 60) / 2;
+                if (timeLeft === midPoint) setInsight("חצי דרך מאחוריך! 💪");
+                if (timeLeft === 60) setInsight("דקה אחרונה! תן בראש 🔥");
+            } else if (timeLeft === 0 && isActive) {
+                // Overtime Trigger
+                setInsight("חריגה בזמן ⌛ - רוצה להוסיף 5 דקות?");
+            }
         }
-    }, [timeLeft, mode, activeTask]);
+    }, [timeLeft, mode, activeTask, isActive]);
 
     // Clear insight after 5 seconds
     useEffect(() => {
