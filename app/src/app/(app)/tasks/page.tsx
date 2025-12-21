@@ -72,10 +72,6 @@ export default function TasksPage() {
                     <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 dark:bg-indigo-900/10" />
                 </div>
 
-                {/* FAILSAFE INDICATOR */}
-                <div className="fixed top-0 left-0 bg-green-500 text-white text-xs px-2 py-1 z-[99999] opacity-50 pointer-events-none">
-                    System Active | Tasks: {tasks.length}
-                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8 w-full max-w-[1800px] relative z-10">
                     {/* Main Area: Timeline */}
@@ -148,10 +144,6 @@ export default function TasksPage() {
                     </div>
                 )}
 
-                {/* DEBUG INFO BAR (Temporary) */}
-                <div className="fixed bottom-0 right-0 bg-yellow-100 text-xs p-2 opacity-50 hover:opacity-100 z-[9999] text-black">
-                    DEBUG: Tasks={tasks.length}, Processed={processedTasks.length}, Date={displayDate}, Filter={activeCategoryFilter}
-                </div>
 
                 {/* Edit Task Modal Global Logic can be here too or standard logic*/}
                 {editingTask && (
