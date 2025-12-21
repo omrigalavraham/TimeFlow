@@ -2,10 +2,12 @@
 
 import { useStore, Category } from '@/lib/store';
 import { cn } from '@/lib/utils';
-import { Briefcase, BookOpen, Home, Activity, Heart, MoreHorizontal, LayoutGrid } from 'lucide-react';
+import { Briefcase, BookOpen, Home, Activity, Heart, MoreHorizontal, LayoutGrid, Bell, Compass } from 'lucide-react';
 
-export const CATEGORY_CONFIG: Record<Category | 'all', { label: string; icon: any; color: string }> = {
+export const CATEGORY_CONFIG: Record<Category | 'all' | 'reminders' | 'overview', { label: string; icon: any; color: string }> = {
+    'overview': { label: 'סקירה', icon: Compass, color: 'text-indigo-600 bg-indigo-100' },
     'all': { label: 'הכל', icon: LayoutGrid, color: 'text-slate-600 bg-slate-100' },
+    'reminders': { label: 'תזכורות', icon: Bell, color: 'text-amber-600 bg-amber-100' },
     'work': { label: 'עבודה', icon: Briefcase, color: 'text-purple-600 bg-purple-100' },
     'study': { label: 'לימודים', icon: BookOpen, color: 'text-blue-600 bg-blue-100' },
     'home': { label: 'בית', icon: Home, color: 'text-orange-600 bg-orange-100' },
@@ -17,9 +19,21 @@ export const CATEGORY_CONFIG: Record<Category | 'all', { label: string; icon: an
 export default function CategoryTabs() {
     const { activeCategoryFilter, setCategoryFilter } = useStore();
 
+    const categories: (Category | 'all' | 'reminders' | 'overview')[] = [
+        'overview',
+        'all',
+        'reminders',
+        'work',
+        'study',
+        'home',
+        'health',
+        'social',
+        'other'
+    ];
+
     return (
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
-            {(Object.keys(CATEGORY_CONFIG) as Array<Category | 'all'>).map((cat) => {
+            {categories.map((cat) => {
                 const config = CATEGORY_CONFIG[cat];
                 const Icon = config.icon;
                 const isActive = activeCategoryFilter === cat;

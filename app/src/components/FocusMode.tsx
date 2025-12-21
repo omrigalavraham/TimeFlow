@@ -78,9 +78,14 @@ export default function FocusMode() {
         }
     }, []);
 
+    const lastInitializedTaskId = useRef<string | null>(null);
+
     // Initialize Timer
     useEffect(() => {
-        if (activeTask) {
+        if (activeTask && activeTask.id !== lastInitializedTaskId.current) {
+            // New Task Detected - Initialize
+            lastInitializedTaskId.current = activeTask.id;
+
             if (activeTask.type === 'break') {
                 setMode('break');
                 setTimeLeft(activeTask.duration * 60);
@@ -89,7 +94,8 @@ export default function FocusMode() {
                 setIsPaused(false);
                 setIsMinimized(false);
                 setInsight(null);
-            } else if (mode === 'focus') {
+            } else {
+                setMode('focus');
                 setTimeLeft(activeTask.duration * 60);
                 setElapsedTime(0); // Reset elapsed
                 setIsActive(true);
@@ -98,7 +104,7 @@ export default function FocusMode() {
                 setInsight(null);
             }
         }
-    }, [activeTaskId, mode]); // activeTaskId change triggers this. If mode changes manually, we handle logic elsewhere.
+    }, [activeTask, mode]); // activeTask dependency is crucial now because it might be undefined at first render
 
     // Timer Tick
     // Timer Tick
@@ -112,12 +118,7 @@ export default function FocusMode() {
                     const next = prev - 1;
                     // Increment elapsed only in focus mode
                     if (mode === 'focus') {
-                        setElapsedTime(e => {
-                            const newElapsed = e + 1;
-                            // Add XP every minute
-                            if (newElapsed % 60 === 0) addXp(1);
-                            return newElapsed;
-                        });
+                        setElapsedTime(e => e + 1);
                     }
                     return next;
                 });
@@ -131,6 +132,13 @@ export default function FocusMode() {
 
         return () => clearInterval(interval);
     }, [isActive, isPaused, timeLeft, mode, activeTask]);
+
+    // Handle XP Growth
+    useEffect(() => {
+        if (mode === 'focus' && elapsedTime > 0 && elapsedTime % 60 === 0) {
+            addXp(1);
+        }
+    }, [elapsedTime, mode, addXp]);
 
     // Insight & Notifications Logic
     useEffect(() => {
@@ -246,20 +254,19 @@ export default function FocusMode() {
 
     // --- Active Focus View (Standard) ---
     return (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-500">
-            {/* Gradient Background */}
-            {/* Gradient Background - Animated */}
+        <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-500 overflow-hidden">
+            {/* Gradient Background - Animated Breathing */}
             {THEMES.map(theme => (
                 <motion.div
                     key={theme.id}
                     initial={{ opacity: 0 }}
                     animate={{
-                        opacity: selectedThemeId === theme.id && !isPaused ? 0.3 : 0,
-                        scale: isActive && !isPaused ? [1, 1.1, 1] : 1,
+                        opacity: selectedThemeId === theme.id && !isPaused ? 0.6 : 0,
+                        scale: isActive && !isPaused ? [1, 1.2, 1] : 1, // Breathing effect
                     }}
                     transition={{
                         opacity: { duration: 1 },
-                        scale: { duration: 20, repeat: Infinity, ease: "easeInOut" }
+                        scale: { duration: 8, repeat: Infinity, ease: "easeInOut" } // Slow breath
                     }}
                     className={cn(
                         "absolute inset-0 transition-all duration-1000 pointer-events-none bg-gradient-to-br",
@@ -268,224 +275,130 @@ export default function FocusMode() {
                 />
             ))}
 
-            <div className="absolute inset-0 bg-white/40 dark:bg-black/40 backdrop-blur-[2px]" />
-
-            {/* Minimize / Exit / SOUND CONTROLS */}
-            <div className="fixed top-6 right-6 z-50 flex items-center gap-4">
-                {/* Sound Button */}
-                <div className="relative group">
-                    <button
-                        onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-                        className={cn(
-                            "flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md shadow-sm border transition-all",
-                            isSoundEnabled
-                                ? "bg-indigo-100 text-indigo-600 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800"
-                                : "bg-white/80 dark:bg-black/40 text-slate-500 border-slate-200 dark:border-slate-800"
-                        )}
-                        title="סאונד לפוקוס"
-                    >
-                        {isSoundEnabled ? <Volume2 size={18} /> : <Headphones size={18} />}
-                    </button>
-
-                    {/* Sound Menu (Hover/Group) */}
-                    <div className="absolute top-12 right-0 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between pointer-events-none">
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Soundscapes</span>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-2">
-                                {SOUNDS.map(sound => {
-                                    const Icon = sound.icon;
-                                    const isSelected = selectedSoundId === sound.id;
-                                    return (
-                                        <button
-                                            key={sound.id}
-                                            onClick={() => {
-                                                setSelectedSoundId(sound.id);
-                                                setIsSoundEnabled(true);
-                                            }}
-                                            className={cn(
-                                                "flex flex-col items-center gap-2 p-2 rounded-lg transition-all text-xs font-medium",
-                                                isSelected
-                                                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800"
-                                                    : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500"
-                                            )}
-                                        >
-                                            <Icon size={20} />
-                                            {sound.label}
-                                        </button>
-                                    )
-                                })}
-                            </div>
-
-                            {/* Volume Slider */}
-                            <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <VolumeX size={14} className="text-slate-400" />
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                    value={soundVolume}
-                                    onChange={(e) => setSoundVolume(parseFloat(e.target.value))}
-                                    className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-500 cursor-pointer"
-                                />
-                                <Volume2 size={14} className="text-slate-400" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Theme Selector */}
-                <div className="relative group">
-                    <button
-                        onClick={() => setShowThemeSelector(!showThemeSelector)}
-                        className="flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md shadow-sm border bg-white/80 dark:bg-black/40 text-slate-500 border-slate-200 dark:border-slate-800"
-                        title="ערכות נושא"
-                    >
-                        <Palette size={18} />
-                    </button>
-
-                    <div className="absolute top-12 right-0 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-top-right">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between pointer-events-none">
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Themes & Level</span>
-                                <span className="text-xs font-bold text-indigo-500">LVL {level}</span>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-2">
-                                {THEMES.map(theme => {
-                                    const isLocked = level < theme.minLevel;
-                                    const isSelected = selectedThemeId === theme.id;
-                                    return (
-                                        <button
-                                            key={theme.id}
-                                            disabled={isLocked}
-                                            onClick={() => setSelectedThemeId(theme.id)}
-                                            className={cn(
-                                                "flex items-center justify-between p-2 rounded-lg transition-all text-xs font-medium w-full",
-                                                isSelected
-                                                    ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 ring-1 ring-indigo-200 dark:ring-indigo-800"
-                                                    : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500",
-                                                isLocked && "opacity-50 cursor-not-allowed grayscale"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <div className={cn("w-4 h-4 rounded-full bg-gradient-to-br", theme.gradient)} />
-                                                {theme.label}
-                                            </div>
-                                            {isLocked && <Lock size={12} />}
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button
-                    onClick={() => setIsMinimized(true)}
-                    className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors flex items-center gap-2 bg-white/80 dark:bg-black/40 px-4 py-2 rounded-full backdrop-blur-md shadow-sm border border-slate-200 dark:border-slate-800"
-                >
-                    <Minimize2 size={18} /> <span className="hidden sm:inline">מזער</span>
-                </button>
-                <button
-                    onClick={() => setActiveTask(null)}
-                    className="p-2 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors bg-white/80 dark:bg-black/40 rounded-full backdrop-blur-md shadow-sm border border-slate-200 dark:border-slate-800"
-                >
-                    <X size={24} />
-                </button>
-            </div>
+            <div className="absolute inset-0 bg-white/60 dark:bg-black/40 backdrop-blur-[30px]" />
 
             {/* Smart Insight Toast */}
-            {insight && (
-                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
-                    <div className="bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl border border-slate-700 flex items-center gap-3">
-                        <span className="text-xl">✨</span>
-                        <span className="font-medium">{insight}</span>
-                        {/* Allow click to add time if overtime */}
-                        {insight.includes("להוסיף") && (
-                            <button onClick={() => setTimeLeft(l => l + 300)} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-xs ml-2">כן, הוסף 5 דק'</button>
-                        )}
+            <AnimatePresence>
+                {insight && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="fixed top-12 left-1/2 -translate-x-1/2 z-50"
+                    >
+                        <div className="bg-slate-900/90 text-white px-6 py-3 rounded-full shadow-2xl border border-white/10 flex items-center gap-3 backdrop-blur-md">
+                            <span className="text-xl animate-pulse">✨</span>
+                            <span className="font-medium">{insight}</span>
+                            {/* Allow click to add time if overtime */}
+                            {insight.includes("להוסיף") && (
+                                <button onClick={() => setTimeLeft(l => l + 300)} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-md text-xs ml-2 transition-colors">כן, הוסף 5 דק'</button>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+
+            {/* Main Content */}
+            <div className="relative z-10 w-full max-w-4xl px-8 text-center flex flex-col items-center min-h-screen justify-center pb-32">
+
+                {/* Task Context */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-12 space-y-4"
+                >
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-slate-900/5 dark:bg-white/10 text-slate-600 dark:text-slate-300 backdrop-blur-sm border border-slate-200/50 dark:border-white/10">
+                        <div className={cn("w-2 h-2 rounded-full", isPaused ? "bg-amber-500" : "bg-green-500 animate-pulse")} />
+                        {isPaused ? 'מושהה' : 'בפוקוס'}
                     </div>
-                </div>
-            )}
 
-
-
-            <div className="relative z-10 w-full max-w-2xl px-8 text-center space-y-12">
-
-                {/* Task Title */}
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 mb-4 backdrop-blur-sm border border-purple-200 dark:border-purple-800">
-                        כרגע עובדים על
-                    </div>
-                    {/* Add fallback title if activeTask is missing (should not happen due to guard) */}
-                    <h1 className="text-4xl md:text-6xl font-black text-slate-800 dark:text-white leading-tight">
+                    <h1 className="text-4xl md:text-7xl font-black text-slate-900 dark:text-white leading-tight tracking-tight drop-shadow-sm max-w-3xl px-2">
                         {activeTask?.title || "משימה"}
                     </h1>
-                </div>
+                </motion.div>
 
-                {/* Timer Display */}
+                {/* Timer Display - Massive */}
                 <div className={cn(
-                    "font-mono text-[8rem] md:text-[12rem] leading-none tracking-tighter font-bold tabular-nums drop-shadow-sm select-none transition-colors",
-                    timeLeft === 0 ? "text-red-500 animate-pulse" : "text-slate-900 dark:text-white"
+                    "font-mono text-[6rem] md:text-[14rem] leading-none tracking-tighter font-bold tabular-nums select-none transition-all duration-500",
+                    timeLeft === 0 ? "text-red-500 animate-pulse" : "text-slate-900 dark:text-white opacity-90",
+                    isPaused && "opacity-50 blur-[2px]"
                 )}>
                     {timeString}
                 </div>
+            </div>
 
-                {/* Controls */}
-                <div className="flex items-center justify-center gap-6 relative">
-                    {/* Break Button with Menu */}
-                    <div className="relative group">
-                        <button
-                            className="p-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-110 active:scale-95 shadow-sm"
-                            title="צא להפסקה"
-                        >
-                            <Coffee size={32} />
-                        </button>
-                        {/* Hover Menu for Break Options */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 bg-white dark:bg-slate-900 p-2 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-bottom">
-                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">קח הפסקה</div>
-                            <div className="space-y-1">
-                                <button onClick={() => startBreak(5)} className="w-full text-right px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-sm flex items-center justify-between">
-                                    <span>⚡ התרעננות</span>
-                                    <span className="text-slate-400">5 דק'</span>
+
+            {/* Floating Island Control Bar */}
+            <motion.div
+                initial={{ y: 100 }}
+                animate={{ y: 0 }}
+                className="fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 md:gap-4 bg-white/80 dark:bg-black/60 backdrop-blur-2xl p-2 md:p-3 pr-4 pl-4 md:pr-6 md:pl-6 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10 ring-1 ring-black/5 w-[90%] md:w-auto overflow-x-auto md:overflow-visible scrollbar-hide justify-between md:justify-start"
+            >
+                {/* 1. Theme Selector */}
+                <div className="relative group flex items-center">
+                    <button className="p-3 text-slate-500 hover:text-indigo-500 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-white/10">
+                        <Palette size={20} />
+                    </button>
+                    {/* Theme Popup (Upwards) */}
+                    <div className="absolute bottom-full left-0 mb-4 bg-white dark:bg-slate-900 p-3 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-bottom-left">
+                        <div className="grid grid-cols-1 gap-1">
+                            {THEMES.map(theme => (
+                                <button key={theme.id} onClick={() => setSelectedThemeId(theme.id)} className={cn("flex items-center gap-3 p-2 rounded-lg text-xs font-bold transition-colors", selectedThemeId === theme.id ? "bg-indigo-50 text-indigo-600" : "hover:bg-slate-50 text-slate-500")}>
+                                    <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br", theme.gradient)} /> {theme.label}
                                 </button>
-                                <button onClick={() => startBreak(15)} className="w-full text-right px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-sm flex items-center justify-between">
-                                    <span>☕ קפה</span>
-                                    <span className="text-slate-400">15 דק'</span>
-                                </button>
-                                <button onClick={() => startBreak(30)} className="w-full text-right px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-sm flex items-center justify-between">
-                                    <span>🍱 צהריים</span>
-                                    <span className="text-slate-400">30 דק'</span>
-                                </button>
-                                <button onClick={() => {
-                                    const m = prompt("כמה דקות הפסקה?");
-                                    if (m) startBreak(parseInt(m));
-                                }} className="w-full text-right px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-sm flex items-center justify-between text-indigo-500">
-                                    <span>✏️ מותאם אישית</span>
-                                </button>
-                            </div>
+                            ))}
                         </div>
                     </div>
+                </div>
 
-                    <button
-                        onClick={() => setIsPaused(!isPaused)}
-                        className="p-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-110 active:scale-95 shadow-sm"
-                    >
-                        {isPaused ? <Play size={32} className="ml-1" /> : <Pause size={32} />}
+                {/* 2. Sound Selector */}
+                <div className="relative group flex items-center border-l border-slate-200 dark:border-white/10 pl-4 ml-2">
+                    <button className={cn("p-3 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-white/10", isSoundEnabled ? "text-indigo-500" : "text-slate-500")}>
+                        {isSoundEnabled ? <Volume2 size={20} /> : <Headphones size={20} />}
                     </button>
+                    {/* Sound Popup */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-bottom">
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                            {SOUNDS.map(s => (
+                                <button key={s.id} onClick={() => { setSelectedSoundId(s.id); setIsSoundEnabled(true); }} className={cn("flex flex-col items-center gap-2 p-2 rounded-xl text-[10px] font-bold transition-colors", selectedSoundId === s.id ? "bg-indigo-50 text-indigo-600 ring-2 ring-indigo-100" : "bg-slate-50 text-slate-400")}>
+                                    <s.icon size={16} /> {s.label}
+                                </button>
+                            ))}
+                        </div>
+                        <input type="range" min="0" max="1" step="0.1" value={soundVolume} onChange={(e) => setSoundVolume(parseFloat(e.target.value))} className="w-full h-1 bg-slate-200 rounded-full appearance-none cursor-pointer" />
+                    </div>
+                </div>
 
-                    <button
-                        onClick={handleComplete}
-                        className="px-8 py-6 rounded-full bg-slate-900 dark:bg-green-600 text-white hover:bg-slate-800 dark:hover:bg-green-700 transition-all hover:scale-105 active:scale-95 shadow-lg flex items-center gap-3 text-xl font-bold"
-                    >
-                        <CheckCircle size={24} /> סיימתי!
+                {/* 3. Main Action Play/Pause (Center, Large) */}
+                <div className="px-4">
+                    <button onClick={() => setIsPaused(!isPaused)} className="w-16 h-16 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl">
+                        {isPaused ? <Play size={28} className="ml-1" /> : <Pause size={28} />}
                     </button>
                 </div>
-            </div>
+
+                {/* 4. Complete / Break Buttons */}
+                <div className="flex items-center gap-2 border-r border-slate-200 dark:border-white/10 pr-4 mr-2">
+                    <div className="relative group">
+                        <button className="p-3 text-slate-500 hover:text-orange-500 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-white/10">
+                            <Coffee size={20} />
+                        </button>
+                        <div className="absolute bottom-full right-1/2 translate-x-1/2 mb-4 bg-white dark:bg-slate-900 p-2 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 w-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 origin-bottom">
+                            {[5, 15, 30].map(m => (
+                                <button key={m} onClick={() => startBreak(m)} className="w-full text-right px-3 py-2 hover:bg-slate-50 rounded-lg text-sm font-bold text-slate-600">הפסקה {m} דק'</button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. Complete / Exit */}
+                <div className="flex items-center gap-2">
+                    <button onClick={handleComplete} className="p-3 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors" title="סיים משימה"><CheckCircle size={20} /></button>
+                    <button onClick={() => setIsMinimized(true)} className="p-3 text-slate-400 hover:text-slate-600 rounded-xl transition-colors" title="מזער"><Minimize2 size={20} /></button>
+                    <button onClick={() => setActiveTask(null)} className="p-3 text-slate-400 hover:text-red-500 rounded-xl transition-colors" title="צא"><X size={20} /></button>
+                </div>
+            </motion.div>
+
         </div>
     );
 }

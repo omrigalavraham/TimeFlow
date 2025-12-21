@@ -8,6 +8,15 @@ const rubik = Rubik({ subsets: ["latin", "hebrew"] });
 export const metadata: Metadata = {
   title: "TimeFlow - Productivity Assistant",
   description: "Minimalist daily planner",
+  manifest: '/manifest.json', // Next.js auto-generates this route from manifest.ts
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'TimeFlow',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -36,4 +45,3 @@ export default function RootLayout({
     </html>
   );
 }
-

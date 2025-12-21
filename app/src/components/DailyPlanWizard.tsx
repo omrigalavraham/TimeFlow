@@ -16,7 +16,7 @@ export default function DailyPlanWizard() {
     const [plan, setPlan] = useState<OptimizedPlan | null>(null);
 
     // Filter for today's tasks only
-    const todaysTasks = tasks.filter(t => t.scheduledDate === selectedDate && !t.completed);
+    const todaysTasks = tasks.filter(t => t.scheduledDate === selectedDate && !t.completed && t.type !== 'focus');
     const totalMinutes = todaysTasks.reduce((acc, t) => acc + t.duration, 0);
 
     // Step 2: Run Analysis

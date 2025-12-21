@@ -1,0 +1,16 @@
+"use client";
+
+import HorizonView from '@/components/HorizonView';
+import { useRouter } from "next/navigation";
+
+export default function DashboardPage() {
+    const router = useRouter();
+
+    return (
+        <div className="h-full">
+            <HorizonView
+                onOpenStudyHub={() => router.push('/study')}
+            />
+        </div>
+    );
+}

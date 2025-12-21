@@ -12,9 +12,10 @@ export default function TaskCompletionModal() {
     // Steps: 
     // 1. 'input': Enter actual time spent.
     // 2. 'completion-check': "Did you finish everything?"
-    // 3. 'split-task': If not finished, configure the follow-up task.
-    // 4. 'feedback': Success screen (Festivities).
-    const [step, setStep] = useState<'input' | 'completion-check' | 'split-task' | 'feedback'>('input');
+    // 3. 'confidence-check': Rating 1-5 (Study only)
+    // 4. 'split-task': If not finished OR low confidence.
+    // 5. 'feedback': Success screen.
+    const [step, setStep] = useState<'input' | 'completion-check' | 'confidence-check' | 'split-task' | 'feedback'>('input');
 
     const [durationInput, setDurationInput] = useState('');
 
@@ -35,14 +36,7 @@ export default function TaskCompletionModal() {
         const task = currentTasks.find(t => t.id === completionData.taskId);
 
         if (completionData.elapsedTime !== undefined) {
-            // If coming from Focus Mode (timer), we might still want to ask if finished?
-            // For now, let's assume if timer ended, we ask.
             setDurationInput(Math.ceil(completionData.elapsedTime / 60).toString());
-            setStep('completion-check'); // Skip direct input if we have trusted timer data? Or confirm it?
-            // Let's stick to flow: Input -> Check.
-            // If we have data, populate input but show step 'input' to allow adjustment?
-            // Or better: Jump to check if we trust the timer.
-            // User wants to confirm time usually. Let's start at 'input' but pre-filled.
             setStep('input');
         } else {
             if (task) setDurationInput(task.duration.toString());
@@ -65,25 +59,48 @@ export default function TaskCompletionModal() {
     };
 
     const handleFullCompletion = () => {
-        // Normal Flow
+        // Update Actual Duration
         const actual = parseInt(durationInput) || task.duration;
         updateTask(task.id, { actualDuration: actual });
-        toggleTaskCompletion(task.id);
 
+        // If Study Task -> Go to Confidence Check
+        if (task.category === 'study' || task.type === 'study' || task.groupId) {
+            setStep('confidence-check');
+        } else {
+            // Normal Finish
+            finishTask();
+        }
+    };
+
+    const handleConfidenceSubmit = (score: number) => {
+        updateTask(task.id, { confidenceScore: score });
+
+        if (score <= 2) {
+            // Low confidence -> Suggest reinforcement
+            setSplitTitle(`חזרה על: ${task.title}`);
+            setSplitDuration('30'); // Default reinforcement time
+            setStep('split-task');
+        } else {
+            finishTask();
+        }
+    };
+
+    const finishTask = () => {
+        toggleTaskCompletion(task.id);
         confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
         setStep('feedback');
     };
 
     const handlePartialCompletion = () => {
-        // Go into Split Wizard
+        // Go into Split Wizard (for unfinished tasks)
         setStep('split-task');
     };
 
     const confirmSplit = () => {
-        // 1. Complete original task
-        const actual = parseInt(durationInput) || task.duration;
-        updateTask(task.id, { actualDuration: actual });
-        toggleTaskCompletion(task.id);
+        // 1. Complete original task (if not already done via confidence flow)
+        if (!task.completed) {
+            toggleTaskCompletion(task.id);
+        }
 
         // 2. Create NEW Independent Task
         const targetDate = new Date();
@@ -95,11 +112,12 @@ export default function TaskCompletionModal() {
         addTask({
             title: splitTitle,
             duration: parseInt(splitDuration),
-            priority: task.priority, // Inherit priority?
-            type: 'task',
-            recurrence: undefined, // Usually follow-ups are one-off
+            priority: task.priority,
+            type: task.type === 'study' ? 'study' : 'task', // Preserve type
+            category: task.category, // Preserve category
+            groupId: task.groupId, // Preserve Group (Important for Study Plan!)
+            recurrence: undefined,
             scheduledDate: dateStr
-            // User didn't specify exact time for split, so flexible.
         });
 
         confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
@@ -165,6 +183,35 @@ export default function TaskCompletionModal() {
                             <button onClick={handlePartialCompletion} className="w-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
                                 לא, נשאר עוד קצת...
                             </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 2.5: Confidence Rating (For Study Tasks) */}
+                {step === 'confidence-check' && (
+                    <div className="text-center space-y-6 pt-4 animate-in slide-in-from-right-5">
+                        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto text-indigo-600 dark:text-indigo-400">
+                            <span className="text-3xl">🧠</span>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">איך מרגיש עם החומר?</h2>
+                            <p className="text-slate-500 text-sm">דרג את רמת ההבנה שלך</p>
+                        </div>
+
+                        <div className="flex justify-center gap-2">
+                            {[1, 2, 3, 4, 5].map((score) => (
+                                <button
+                                    key={score}
+                                    onClick={() => handleConfidenceSubmit(score)}
+                                    className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:text-indigo-600 hover:scale-110 transition-all font-bold text-xl"
+                                >
+                                    {score}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-400 px-8">
+                            <span>לא הבנתי כלום 😰</span>
+                            <span>קל מאוד 😎</span>
                         </div>
                     </div>
                 )}

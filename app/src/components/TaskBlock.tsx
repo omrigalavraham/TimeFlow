@@ -4,6 +4,7 @@ import { Task, useStore } from '@/lib/store';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TaskCard } from './TaskCard';
+import { ReminderCard } from './ReminderCard';
 
 interface Props {
     task: Task;
@@ -37,6 +38,24 @@ export default function TaskBlock({ task, isOverlay }: Props) {
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = tomorrow.toISOString().split('T')[0];
         moveTaskToDate(id, tomorrowStr);
+    }
+
+    if (task.type === 'reminder') {
+        return (
+            <ReminderCard
+                ref={setNodeRef}
+                task={task}
+                isOverlay={isOverlay}
+                isActive={isActive}
+                isDragging={isDragging}
+                style={style}
+                listeners={listeners}
+                attributes={attributes}
+                toggleTaskCompletion={toggleTaskCompletion}
+                deleteTask={deleteTask}
+                setEditingTask={setEditingTask}
+            />
+        )
     }
 
     return (

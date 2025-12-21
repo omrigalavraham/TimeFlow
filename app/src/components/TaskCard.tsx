@@ -88,8 +88,8 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(({
             )}
         >
             <motion.div
-                initial={isOverlay ? undefined : { opacity: 0, y: 20, scale: 0.95 }}
-                animate={isOverlay ? undefined : { opacity: 1, y: 0, scale: 1 }}
+                initial={isOverlay ? undefined : { opacity: 1, y: 0 }}
+                animate={isOverlay ? undefined : { opacity: 1, y: 0 }}
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.3 }}
                 className={cn(
