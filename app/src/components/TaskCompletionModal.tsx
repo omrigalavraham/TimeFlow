@@ -64,7 +64,7 @@ export default function TaskCompletionModal() {
         updateTask(task.id, { actualDuration: actual });
 
         // If Study Task -> Go to Confidence Check
-        if (task.category === 'study' || task.type === 'study' || task.groupId) {
+        if (task.category === 'study' || task.groupId) {
             setStep('confidence-check');
         } else {
             // Normal Finish
@@ -113,7 +113,7 @@ export default function TaskCompletionModal() {
             title: splitTitle,
             duration: parseInt(splitDuration),
             priority: task.priority,
-            type: task.type === 'study' ? 'study' : 'task', // Preserve type
+            type: 'task', // Preserve as task type
             category: task.category, // Preserve category
             groupId: task.groupId, // Preserve Group (Important for Study Plan!)
             recurrence: undefined,
