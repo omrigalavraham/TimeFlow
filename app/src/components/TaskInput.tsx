@@ -26,7 +26,9 @@ export default function TaskInput({ onClose, initialData, defaultDate, defaultTy
     const [duration, setDuration] = useState(initialData?.duration?.toString() || '60');
     const [priority, setPriority] = useState<Priority>(initialData?.priority || 'must');
     const [recurrence, setRecurrence] = useState<'daily' | 'weekly' | ''>(initialData?.recurrence || '');
-    const [type, setType] = useState<'task' | 'break' | 'reminder' | 'study'>(initialData?.type || defaultType);
+    const [type, setType] = useState<'task' | 'break' | 'reminder' | 'study'>(
+        (initialData?.type === 'focus' ? 'task' : initialData?.type) || defaultType
+    );
     const [startTime, setStartTime] = useState(initialData?.startTime || '');
     const [category, setCategory] = useState<Category>(initialData?.category || 'other');
 
