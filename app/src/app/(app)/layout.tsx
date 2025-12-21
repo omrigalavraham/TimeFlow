@@ -44,8 +44,11 @@ export default function AppLayout({
             {/* Sidebar */}
             <AppSidebar />
 
+            {/* Mobile Header Spacer - MUST be outside sidebar */}
+            <div className="md:hidden h-16 w-full shrink-0 absolute top-0 left-0 right-0 pointer-events-none z-0" />
+
             {/* Main Content */}
-            <main className="flex-1 relative overflow-y-auto h-full scrollbar-hide">
+            <main className="flex-1 relative overflow-y-auto h-full scrollbar-hide pt-16 md:pt-0">
                 {children}
             </main>
 

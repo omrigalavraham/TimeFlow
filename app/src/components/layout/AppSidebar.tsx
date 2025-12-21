@@ -55,9 +55,6 @@ export default function AppSidebar() {
                 </button>
             </div>
 
-            {/* Content Spacer for Mobile Header */}
-            <div className="md:hidden h-16 w-full shrink-0" />
-
             {/* Mobile Backdrop */}
             {isMobileOpen && (
                 <div
