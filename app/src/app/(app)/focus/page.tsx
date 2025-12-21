@@ -38,7 +38,7 @@ export default function FocusPage() {
             title: `${preset.icon} ${preset.title}`,
             description: 'סשן פוקוס מהיר',
             status: 'todo' as const,
-            priority: 'medium' as 'medium', // Explicit cast
+            priority: 'should' as const,
             scheduledDate: new Date().toISOString().split('T')[0],
             duration: preset.duration,
             createdAt: new Date().toISOString(),
