@@ -10,7 +10,10 @@ interface StudyProgressWidgetProps {
 }
 
 export function StudyProgressWidget({ onAdd, onManage }: StudyProgressWidgetProps) {
-    const { tasks, deleteTaskGroup, deleteStudyGroupByTitle } = useStore();
+    const deleteTaskGroup = useStore(s => s.deleteTaskGroup);
+    const deleteStudyGroupByTitle = useStore(s => s.deleteStudyGroupByTitle);
+
+    const tasks = useStore(s => s.tasks);
 
     // Group study tasks by "Group ID" or Title heuristic
     const studyGroups = useMemo(() => {
@@ -18,6 +21,8 @@ export function StudyProgressWidget({ onAdd, onManage }: StudyProgressWidgetProp
 
         tasks.forEach(t => {
             if (t.category !== 'study') return;
+            // STRICT FILTER: Ignore "Projects" (Assignments) from this view. They belong in the AssignmentWidget.
+            if (t.type === 'project') return;
 
             // Try to find the "Exam" name from the title
             let groupName = t.title.replace('🏆 ', '').replace('📚 למידה: ', '');

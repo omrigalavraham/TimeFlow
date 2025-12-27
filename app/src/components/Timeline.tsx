@@ -13,6 +13,23 @@ interface Props {
     tasks: Task[];
 }
 
+const getTimeBlock = (t: Task) => {
+    if (!t.startTime) return 'anytime';
+    const hour = parseInt(t.startTime.split(':')[0]);
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    if (hour < 20) return 'evening';
+    return 'night';
+};
+
+const BLOCK_CONFIG = {
+    morning: { label: 'בוקר', icon: Sun, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    afternoon: { label: 'צהריים', icon: Sun, color: 'text-orange-500', bg: 'bg-orange-500/10' }, // Sun again or maybe distinct?
+    evening: { label: 'ערב', icon: Sunset, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+    night: { label: 'לילה', icon: Moon, color: 'text-slate-400', bg: 'bg-slate-500/10' },
+    anytime: { label: 'ללא שעה', icon: Coffee, color: 'text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' }
+};
+
 export default function Timeline({ tasks }: Props) {
     const reorderTasks = useStore((state) => state.reorderTasks);
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -48,22 +65,7 @@ export default function Timeline({ tasks }: Props) {
     // Since dnd-kit requires a flat list for sorting, we will render the header *as part of* the item mapping
     // based on whether it's the first item of that block.
 
-    const getTimeBlock = (t: Task) => {
-        if (!t.startTime) return 'anytime';
-        const hour = parseInt(t.startTime.split(':')[0]);
-        if (hour < 12) return 'morning';
-        if (hour < 17) return 'afternoon';
-        if (hour < 20) return 'evening';
-        return 'night';
-    };
 
-    const BLOCK_CONFIG = {
-        morning: { label: 'בוקר', icon: Sun, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-        afternoon: { label: 'צהריים', icon: Sun, color: 'text-orange-500', bg: 'bg-orange-500/10' }, // Sun again or maybe distinct?
-        evening: { label: 'ערב', icon: Sunset, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-        night: { label: 'לילה', icon: Moon, color: 'text-slate-400', bg: 'bg-slate-500/10' },
-        anytime: { label: 'ללא שעה', icon: Coffee, color: 'text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' }
-    };
 
     if (tasks.length === 0) {
         return (

@@ -11,21 +11,22 @@ interface Props {
     isOverlay?: boolean;
 }
 
-export default function TaskBlock({ task, isOverlay }: Props) {
+import { memo } from 'react';
+
+const TaskBlock = memo(function TaskBlock({ task, isOverlay }: Props) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id, data: task });
 
     // Store Actions
-    const {
-        toggleTaskCompletion,
-        deleteTask,
-        activeTaskId,
-        setActiveTask,
-        moveTaskToDate,
-        setEditingTask,
-        openCompletionModal
-    } = useStore();
+    // Store Actions - Stable selectors
+    const toggleTaskCompletion = useStore(s => s.toggleTaskCompletion);
+    const deleteTask = useStore(s => s.deleteTask);
+    const setActiveTask = useStore(s => s.setActiveTask);
+    const moveTaskToDate = useStore(s => s.moveTaskToDate);
+    const setEditingTask = useStore(s => s.setEditingTask);
+    const openCompletionModal = useStore(s => s.openCompletionModal);
 
-    const isActive = activeTaskId === task.id;
+    // Optimized selector: only re-render if THIS task becomes active or inactive
+    const isActive = useStore(s => s.activeTaskId === task.id);
 
     const style = {
         transform: CSS.Translate.toString(transform),
@@ -76,4 +77,6 @@ export default function TaskBlock({ task, isOverlay }: Props) {
             openCompletionModal={openCompletionModal}
         />
     );
-}
+});
+
+export default TaskBlock;

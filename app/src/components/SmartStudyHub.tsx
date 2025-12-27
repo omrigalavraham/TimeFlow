@@ -1,11 +1,14 @@
 "use client";
 
 import { useStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { useMemo, useState } from 'react';
-import { GraduationCap, ArrowLeft, Calendar, Brain, Clock, Pencil, Plus, Trash2 } from 'lucide-react';
+import { GraduationCap, ArrowLeft, Calendar, Brain, Clock, Pencil, Plus, Trash2, Library, ScrollText, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import ExamWizard from './ExamWizard';
+import CourseWizard from './CourseWizard';
+import AssignmentWizard from './AssignmentWizard';
 
 interface SmartStudyHubProps {
     onBack: () => void;
@@ -29,15 +32,26 @@ const getCourseColor = (id: string) => {
 };
 
 export default function SmartStudyHub({ onBack }: SmartStudyHubProps) {
-    const { tasks, deleteTaskGroup, deleteStudyGroupByTitle } = useStore();
+    // Consolidated store selectors for performance optimization
+    const { tasks, courses, deleteCourse, deleteTaskGroup, deleteStudyGroupByTitle } = useStore(
+        useShallow((s) => ({
+            tasks: s.tasks,
+            courses: s.courses,
+            deleteCourse: s.deleteCourse,
+            deleteTaskGroup: s.deleteTaskGroup,
+            deleteStudyGroupByTitle: s.deleteStudyGroupByTitle,
+        }))
+    );
     const [wizardOpen, setWizardOpen] = useState(false);
+    const [courseWizardOpen, setCourseWizardOpen] = useState(false);
+    const [assignmentWizardOpen, setAssignmentWizardOpen] = useState(false);
+    const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
     const [editingGroup, setEditingGroup] = useState<{ groupId: string, title: string, examDate: string } | undefined>(undefined);
 
-    // Group tasks into "Exams"
+    // Group tasks into "Exams" - includes both new (with groupId) and legacy (without groupId)
     const exams = useMemo(() => {
-        // ... (existing logic)
         const groups: Record<string, {
-            id: string; // groupId
+            id: string; // groupId or generated legacy key
             title: string;
             examDate: string | null;
             totalTasks: number;
@@ -48,10 +62,35 @@ export default function SmartStudyHub({ onBack }: SmartStudyHubProps) {
         }> = {};
 
         tasks.forEach(t => {
-            if (t.category !== 'study' || !t.groupId) return;
-            const key = t.groupId;
+            if (t.category !== 'study') return;
+
+            // Determine the group key - either groupId or title-based for legacy
+            let key: string;
+            let isLegacy = false;
+
+            if (t.groupId) {
+                key = t.groupId;
+            } else {
+                // Check if this looks like a study plan task (has 🏆 or 📚 pattern)
+                // Only treat as legacy if it matches the pattern - otherwise ignore
+                const isStudyPlanPattern = t.title.includes('🏆') || t.title.startsWith('📚 ');
+                if (!isStudyPlanPattern) {
+                    return; // Skip regular study tasks without groupId
+                }
+
+                // Legacy task - extract base title and use as key
+                const baseTitle = t.title
+                    .replace('🏆 ', '')
+                    .replace('📚 למידה: ', '')
+                    .replace('📚 ', '')
+                    .split(':')[0]
+                    .trim();
+                key = `legacy_${baseTitle}`;
+                isLegacy = true;
+            }
+
             if (!groups[key]) {
-                const cleanName = t.title.replace('🏆 ', '').replace('📚 למידה: ', '').split(':')[0].trim();
+                const cleanName = t.title.replace('🏆 ', '').replace('📚 למידה: ', '').replace('📚 ', '').split(':')[0].trim();
                 groups[key] = {
                     id: key,
                     title: cleanName,
@@ -60,10 +99,15 @@ export default function SmartStudyHub({ onBack }: SmartStudyHubProps) {
                     completedTasks: 0,
                     nextSession: null,
                     nextTopic: null,
-                    isLegacy: false
+                    isLegacy: isLegacy
                 };
             }
-            // ... (rest of logic same as before)
+
+            // Mark as legacy if any task in group is legacy
+            if (isLegacy) {
+                groups[key].isLegacy = true;
+            }
+
             if (t.title.includes('🏆')) {
                 groups[key].examDate = t.scheduledDate;
                 groups[key].title = t.title.replace('🏆 ', '');
@@ -75,7 +119,7 @@ export default function SmartStudyHub({ onBack }: SmartStudyHubProps) {
                 if (!t.completed && t.scheduledDate >= today) {
                     if (!groups[key].nextSession || t.scheduledDate < groups[key].nextSession!) {
                         groups[key].nextSession = t.scheduledDate;
-                        groups[key].nextTopic = t.title.replace('📚 למידה: ', '').replace(groups[key].title + ': ', '');
+                        groups[key].nextTopic = t.title.replace('📚 למידה: ', '').replace('📚 ', '').replace(groups[key].title + ': ', '');
                     }
                 }
             }
@@ -150,10 +194,16 @@ export default function SmartStudyHub({ onBack }: SmartStudyHubProps) {
                                 <p className="text-slate-500 font-medium">מרכז השליטה האקדמי שלך</p>
                             </div>
                         </div>
-                        <button onClick={handleCreate} className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all hover:scale-105 active:scale-95">
-                            <Plus size={20} />
-                            <span className="hidden sm:inline">תוכנית חדשה</span>
-                        </button>
+                        <div className="flex gap-3">
+                            <button onClick={() => setAssignmentWizardOpen(true)} className="flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-5 py-3 rounded-2xl font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                                <ScrollText size={20} className="text-indigo-500" />
+                                <span className="hidden sm:inline">מטלה חדשה</span>
+                            </button>
+                            <button onClick={handleCreate} className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all hover:scale-105 active:scale-95">
+                                <Wand2 size={20} />
+                                <span className="hidden sm:inline">התכונן למבחן</span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Hero Section: Next Urgent Exam */}
@@ -183,6 +233,70 @@ export default function SmartStudyHub({ onBack }: SmartStudyHubProps) {
                     )}
                 </div>
             </header>
+
+            {/* Courses Section */}
+            <div className="px-8 mb-8 relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                        <Library size={20} className="text-indigo-500" />
+                        הקורסים שלי ({courses.length})
+                    </h3>
+                    <button
+                        onClick={() => { setEditingCourseId(null); setCourseWizardOpen(true); }}
+                        className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                        + ניהול סילבוס
+                    </button>
+                </div>
+
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                    {/* Add New Course Card */}
+                    <button
+                        onClick={() => { setEditingCourseId(null); setCourseWizardOpen(true); }}
+                        className="min-w-[160px] h-32 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-indigo-500 hover:border-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all group"
+                    >
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Plus size={20} />
+                        </div>
+                        <span className="text-sm font-bold">קורס חדש</span>
+                    </button>
+
+                    {courses.map(course => (
+                        <div
+                            key={course.id}
+                            onClick={() => { setEditingCourseId(course.id); setCourseWizardOpen(true); }}
+                            className={cn(
+                                "min-w-[220px] h-32 rounded-2xl p-4 border flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-all relative overflow-hidden group",
+                                getCourseColor(course.id)
+                            )}
+                        >
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); if (confirm('למחוק את הקורס?')) deleteCourse(course.id); }}
+                                    className="p-1.5 bg-white/50 hover:bg-red-500 hover:text-white rounded-lg text-slate-500 transition-colors"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+
+                            <div>
+                                <h4 className="font-bold text-slate-800 dark:text-white line-clamp-2">{course.title}</h4>
+                                <div className="text-xs text-slate-500 mt-1">{course.syllabus.length} דרישות</div>
+                            </div>
+
+                            <div className="flex gap-1">
+                                {course.syllabus.slice(0, 3).map((item, i) => (
+                                    <div key={i} className={cn(
+                                        "w-2 h-2 rounded-full",
+                                        item.type === 'exam' ? 'bg-red-500' : item.type === 'project' ? 'bg-purple-500' : 'bg-blue-500'
+                                    )} />
+                                ))}
+                                {course.syllabus.length > 3 && <div className="w-2 h-2 rounded-full bg-slate-300" />}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
             {/* Content Grid */}
             <div className="p-8 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10 pb-20">
@@ -298,6 +412,17 @@ export default function SmartStudyHub({ onBack }: SmartStudyHubProps) {
                     <ExamWizard
                         onClose={() => setWizardOpen(false)}
                         initialData={editingGroup}
+                    />
+                )}
+                {courseWizardOpen && (
+                    <CourseWizard
+                        onClose={() => setCourseWizardOpen(false)}
+                        initialData={editingCourseId ? courses.find(c => c.id === editingCourseId) : undefined}
+                    />
+                )}
+                {assignmentWizardOpen && (
+                    <AssignmentWizard
+                        onClose={() => setAssignmentWizardOpen(false)}
                     />
                 )}
             </AnimatePresence>

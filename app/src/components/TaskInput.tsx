@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useStore, Task, Priority, Category } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { X, Clock, Repeat, AlertCircle, Calendar as CalendarIcon, GraduationCap, Link2, Trash2, AlertTriangle, Bell, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getMinutesUntil } from '@/lib/planner';
@@ -15,27 +16,33 @@ interface TaskInputProps {
 }
 
 export default function TaskInput({ onClose, initialData, defaultDate, defaultType = 'task' }: TaskInputProps) {
-    const addTask = useStore((state) => state.addTask);
-    const updateTask = useStore((state) => state.updateTask);
-    const generateStudyPlan = useStore((state) => state.generateStudyPlan);
-    const tasks = useStore((state) => state.tasks);
-    const workEndTime = useStore((state) => state.workEndTime);
+    // Consolidated store selectors for performance optimization
+    const { addTask, updateTask, generateStudyPlan, tasks, workEndTime, selectedDate } = useStore(
+        useShallow((state) => ({
+            addTask: state.addTask,
+            updateTask: state.updateTask,
+            generateStudyPlan: state.generateStudyPlan,
+            tasks: state.tasks,
+            workEndTime: state.workEndTime,
+            selectedDate: state.selectedDate,
+        }))
+    );
 
     // State initialization
     const [title, setTitle] = useState(initialData?.title || '');
     const [duration, setDuration] = useState(initialData?.duration?.toString() || '60');
     const [priority, setPriority] = useState<Priority>(initialData?.priority || 'must');
     const [recurrence, setRecurrence] = useState<'daily' | 'weekly' | ''>(initialData?.recurrence || '');
-    const [type, setType] = useState<'task' | 'break' | 'reminder' | 'study'>(
+    const [type, setType] = useState<'task' | 'break' | 'reminder' | 'study' | 'project'>(
         (initialData?.type === 'focus' ? 'task' : initialData?.type) || defaultType
     );
     const [startTime, setStartTime] = useState(initialData?.startTime || '');
     const [category, setCategory] = useState<Category>(initialData?.category || 'other');
 
     // Reminder State
-    const [alertTime, setAlertTime] = useState<any>(initialData?.alertTime || 'at_event');
-    const [sound, setSound] = useState<any>(initialData?.sound || 'default');
-    const [visualRequest, setVisualRequest] = useState<any>(initialData?.visualRequest || 'both');
+    const [alertTime, setAlertTime] = useState<Task['alertTime']>(initialData?.alertTime || 'at_event');
+    const [sound, setSound] = useState<Task['sound']>(initialData?.sound || 'default');
+    const [visualRequest, setVisualRequest] = useState<Task['visualRequest']>(initialData?.visualRequest || 'both');
     const [actionLink, setActionLink] = useState(initialData?.actionLink || '');
     const [autoOpenLink, setAutoOpenLink] = useState(initialData?.autoOpenLink || false);
 
@@ -46,8 +53,7 @@ export default function TaskInput({ onClose, initialData, defaultDate, defaultTy
     const [replaceTitle, setReplaceTitle] = useState<string | null>(null);
 
     // Explicit Date management (for Reminders/Study particularly, ensuring defaults to selected or today)
-    // To allow picking a date, we need local state initialized from initialData or store.
-    const selectedDate = useStore(state => state.selectedDate);
+    // selectedDate is now extracted from the consolidated store selector above
     const [scheduledDate, setScheduledDate] = useState(initialData?.scheduledDate || defaultDate || selectedDate);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -85,7 +91,7 @@ export default function TaskInput({ onClose, initialData, defaultDate, defaultTy
                     startDate: studyStartDate,
                     sessionDuration: parseInt(duration),
                     selectedDays: studyDays,
-                    examAlert: alertTime,
+                    examAlert: alertTime || 'at_event',
                     replaceTitle: replaceTitle || undefined
                 });
             } else {
@@ -335,7 +341,7 @@ export default function TaskInput({ onClose, initialData, defaultDate, defaultTy
                                 </label>
                                 <select
                                     value={alertTime}
-                                    onChange={(e) => setAlertTime(e.target.value)}
+                                    onChange={(e) => setAlertTime(e.target.value as Task['alertTime'])}
                                     className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                                 >
                                     <option value="at_event">בזמן האירוע</option>
@@ -352,7 +358,7 @@ export default function TaskInput({ onClose, initialData, defaultDate, defaultTy
                                 </label>
                                 <select
                                     value={sound}
-                                    onChange={(e) => setSound(e.target.value)}
+                                    onChange={(e) => setSound(e.target.value as Task['sound'])}
                                     className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                                 >
                                     <option value="default">רגיל 🔔</option>

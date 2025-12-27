@@ -6,17 +6,18 @@ import { Play, CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function FocusWidget() {
-    const { tasks, toggleTaskCompletion, setActiveTask, setDayStatus } = useStore();
-
-    // Find "The One Thing"
-    const focusTask = useMemo(() => {
+    // OPTIMIZED: Select only the computed focus task directly from the store
+    // This prevents re-renders when other unrelated tasks change
+    const focusTask = useStore(state => {
         const today = new Date().toISOString().split('T')[0];
-        // 1. Must do today, not completed
-        let t = tasks.find(t => t.scheduledDate === today && t.priority === 'must' && !t.completed && t.type !== 'break');
-        // 2. Or just any task for today
-        if (!t) t = tasks.find(t => t.scheduledDate === today && !t.completed && t.type !== 'break');
+        let t = state.tasks.find(t => t.scheduledDate === today && t.priority === 'must' && !t.completed && t.type !== 'break');
+        if (!t) t = state.tasks.find(t => t.scheduledDate === today && !t.completed && t.type !== 'break');
         return t;
-    }, [tasks]);
+    });
+
+    const toggleTaskCompletion = useStore(s => s.toggleTaskCompletion);
+    const setActiveTask = useStore(s => s.setActiveTask);
+    const setDayStatus = useStore(s => s.setDayStatus);
 
     const handleStartTask = () => {
         if (!focusTask) return;

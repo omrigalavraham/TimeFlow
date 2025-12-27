@@ -1,5 +1,6 @@
 "use client";
 
+import React, { memo } from 'react';
 import { Task, useStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Trash2, CheckCircle, GripVertical, Play, ArrowRightCircle, Repeat, Clock, Coffee } from 'lucide-react';
@@ -33,7 +34,18 @@ const getPriorityColor = (priority: Task['priority']) => {
     }
 }
 
-export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(({
+const getCategoryStyles = (cat: string) => {
+    switch (cat) {
+        case 'work': return "bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/30";
+        case 'study': return "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30";
+        case 'home': return "bg-orange-50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/30";
+        case 'health': return "bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30";
+        case 'social': return "bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30";
+        default: return "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700";
+    }
+}
+
+const TaskCardBase = forwardRef<HTMLDivElement, TaskCardProps>(({
     task,
     isOverlay,
     isActive,
@@ -53,16 +65,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(({
     const catConfig = CATEGORY_CONFIG[categoryKey] || CATEGORY_CONFIG['other'];
     const CategoryIcon = catConfig.icon;
 
-    const getCategoryStyles = (cat: string) => {
-        switch (cat) {
-            case 'work': return "bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/30";
-            case 'study': return "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30";
-            case 'home': return "bg-orange-50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/30";
-            case 'health': return "bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30";
-            case 'social': return "bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30";
-            default: return "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700";
-        }
-    }
+
 
     const taskColor = task.type === 'break'
         ? "bg-teal-50 dark:bg-teal-900/10 border-teal-100 dark:border-teal-900/30"
@@ -259,4 +262,9 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(({
     )
 });
 
-TaskCard.displayName = "TaskCard";
+// Wrap with memo for performance optimization
+const MemoizedTaskCard = memo(TaskCardBase);
+MemoizedTaskCard.displayName = "TaskCard";
+
+export { MemoizedTaskCard as TaskCard };
+

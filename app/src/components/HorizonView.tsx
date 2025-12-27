@@ -5,6 +5,7 @@ import { BentoGrid, BentoItem } from './dashboard/BentoGrid';
 import { FocusWidget } from './dashboard/FocusWidget';
 import { StatsWidget } from './dashboard/StatsWidget';
 import { StudyProgressWidget } from './dashboard/StudyProgressWidget';
+import { AssignmentsWidget } from './dashboard/AssignmentsWidget';
 import { Calendar, Sun, GraduationCap } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import StrategicCalendar from './StrategicCalendar';
@@ -79,7 +80,12 @@ export default function HorizonView({ onOpenStudyHub }: HorizonViewProps) {
                         <FocusWidget />
                     </BentoItem>
 
-                    {/* 2. Stats (1x1) */}
+                    {/* 2. Upcoming Assignments (1x2) - Visible on right/left of focus */}
+                    <BentoItem rowSpan={2} className="min-h-[300px]">
+                        <AssignmentsWidget />
+                    </BentoItem>
+
+                    {/* 3. Stats (1x1) */}
                     <BentoItem>
                         <StatsWidget />
                     </BentoItem>

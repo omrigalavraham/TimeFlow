@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '@/lib/store';
 import { calculateWorkload, optimizeDay, getMinutesUntil, DayAnalysis, OptimizedPlan } from '@/lib/planner';
 import { ArrowLeft, ArrowRight, Clock, CheckCircle, AlertTriangle, Calendar, Sun, Moon, Coffee } from 'lucide-react';
@@ -16,8 +16,8 @@ export default function DailyPlanWizard() {
     const [plan, setPlan] = useState<OptimizedPlan | null>(null);
 
     // Filter for today's tasks only
-    const todaysTasks = tasks.filter(t => t.scheduledDate === selectedDate && !t.completed && t.type !== 'focus');
-    const totalMinutes = todaysTasks.reduce((acc, t) => acc + t.duration, 0);
+    const todaysTasks = useMemo(() => tasks.filter(t => t.scheduledDate === selectedDate && !t.completed && t.type !== 'focus'), [tasks, selectedDate]);
+    const totalMinutes = useMemo(() => todaysTasks.reduce((acc, t) => acc + t.duration, 0), [todaysTasks]);
 
     // Step 2: Run Analysis
     const runAnalysis = () => {

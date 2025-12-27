@@ -19,6 +19,8 @@ const getStartTime = (): string => {
 
 type Strategy = 'eat-the-frog' | 'snowball' | 'batching';
 
+const PRIORITY_SCORE: Record<string, number> = { must: 3, should: 2, could: 1 };
+
 export const scheduleTasks = (tasks: Task[], strategy: Strategy = 'eat-the-frog'): Task[] => {
     let sortedTasks = [...tasks];
 
@@ -27,8 +29,7 @@ export const scheduleTasks = (tasks: Task[], strategy: Strategy = 'eat-the-frog'
         case 'eat-the-frog':
             // Priority: Must > Should > Could. Within priority: Longest > Shortest
             sortedTasks.sort((a, b) => {
-                const priorityScore: Record<string, number> = { must: 3, should: 2, could: 1 };
-                const diff = priorityScore[b.priority] - priorityScore[a.priority];
+                const diff = PRIORITY_SCORE[b.priority] - PRIORITY_SCORE[a.priority];
                 if (diff !== 0) return diff;
                 return b.duration - a.duration; // Longest first
             });
@@ -39,8 +40,7 @@ export const scheduleTasks = (tasks: Task[], strategy: Strategy = 'eat-the-frog'
             sortedTasks.sort((a, b) => {
                 const diff = a.duration - b.duration; // Shortest first
                 if (diff !== 0) return diff;
-                const priorityScore: Record<string, number> = { must: 3, should: 2, could: 1 };
-                return priorityScore[b.priority] - priorityScore[a.priority];
+                return PRIORITY_SCORE[b.priority] - PRIORITY_SCORE[a.priority];
             });
             break;
 
@@ -50,8 +50,7 @@ export const scheduleTasks = (tasks: Task[], strategy: Strategy = 'eat-the-frog'
             // For MVP: Sort by priority, but within priority, group short tasks?
             // Let's simplified Batching: Must (Short -> Long) -> Should (Short -> Long)
             sortedTasks.sort((a, b) => {
-                const priorityScore: Record<string, number> = { must: 3, should: 2, could: 1 };
-                const diff = priorityScore[b.priority] - priorityScore[a.priority];
+                const diff = PRIORITY_SCORE[b.priority] - PRIORITY_SCORE[a.priority];
                 if (diff !== 0) return diff;
                 return a.duration - b.duration; // Shortest first within priority
             });
@@ -93,8 +92,20 @@ export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
 
     // 2. Iterate and fill gaps
     let flexIndex = 0;
+    let pinnedIndex = 0; // Optimization: index pointer instead of .find()
 
     while (flexIndex < flexibleTasks.length) {
+        // Find next relevant pinned task (closest one ahead of current time)
+        // Since pinnedTasks is sorted, we can just check pinnedIndex
+        let nextPinned = null;
+        while (pinnedIndex < pinnedTasks.length) {
+            if (timeToMinutes(pinnedTasks[pinnedIndex].startTime!) >= currentTimeMinutes) {
+                nextPinned = pinnedTasks[pinnedIndex];
+                break;
+            }
+            pinnedIndex++;
+        }
+
         // Smart Break Check
         if (consecutiveWorkMinutes >= 90) {
             // Find gap for break
@@ -102,9 +113,8 @@ export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
             let breakScheduled = false;
 
             // Check collision with next pinned task for Break
-            const nextPinnedForBreak = pinnedTasks.find(p => timeToMinutes(p.startTime!) >= currentTimeMinutes);
-            if (nextPinnedForBreak) {
-                const timeToPinned = timeToMinutes(nextPinnedForBreak.startTime!) - currentTimeMinutes;
+            if (nextPinned) {
+                const timeToPinned = timeToMinutes(nextPinned.startTime!) - currentTimeMinutes;
                 if (timeToPinned >= breakDuration) {
                     // Fits!
                     scheduledFlexible.push({
@@ -121,9 +131,6 @@ export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
                     consecutiveWorkMinutes = 0; // Reset counter
                     breakScheduled = true;
                 }
-                // If doesn't fit, we might skip break or force it? 
-                // For MVP, if it doesn't fit before pinned, we just don't schedule it *here*.
-                // We'll continue and maybe schedule it after pinned.
             } else {
                 // No pinned ahead
                 scheduledFlexible.push({
@@ -145,9 +152,6 @@ export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
         const task = flexibleTasks[flexIndex];
         const taskDuration = task.duration + (task.duration > 60 ? 10 : 0); // Buffer
 
-        // Check collision with next pinned task
-        const nextPinned = pinnedTasks.find(p => timeToMinutes(p.startTime!) >= currentTimeMinutes);
-
         if (nextPinned) {
             const timeToPinned = timeToMinutes(nextPinned.startTime!) - currentTimeMinutes;
 
@@ -161,10 +165,9 @@ export const assignTimes = (tasks: Task[], startTime: string): Task[] => {
                 // Doesn't fit, jump to after this pinned task
                 const pinnedEnd = timeToMinutes(nextPinned.startTime!) + nextPinned.duration;
                 currentTimeMinutes = Math.max(currentTimeMinutes, pinnedEnd);
-                // Reset consecutive minutes if we jumped over a pinned task (assuming pinned task might be a break or context switch)
-                // Or should we count pinned task duration?
-                // Let's reset for simplicity, assuming pinned tasks break the flow or are meetings.
+                // Reset consecutive minutes if we jumped over a pinned task
                 consecutiveWorkMinutes = 0;
+                // Don't increment flexIndex, try to fit same task in next slot
             }
         } else {
             // No more pinned tasks ahead, straight shot
@@ -200,5 +203,37 @@ export const shiftSchedule = (tasks: Task[], delayMinutes: number): Task[] => {
         };
     });
 
-    // TODO: Implement "Drop Could" logic if end time > 18:00
+    // "Drop Could" Logic (Soft deadline at 18:00 = 1080 minutes)
+    // We iterate from the end. If the last task ends after 18:00 AND is 'could', we unschedule it.
+    // In a real usage, we should probably pass the 'workEndTime' variable, but default to 18:00 for MVP.
+    const DEADLINE_MINUTES = 18 * 60; // 18:00
+
+    // Working with a reversed copy to pop from end? 
+    // Actually, shiftSchedule returns a new array. We can just filter.
+    // Wait, shifting shifts everything. The "Drop Could" was a separate idea for *scheduling*.
+    // But since this function is 'shiftSchedule' (delaying), it pushes things later.
+    // So if pushing makes a 'could' task go late, we drop it (unschedule it).
+
+    return tasks.map(task => {
+        if (task.completed || !task.startTime) return task;
+
+        const newStartStr = addMinutes(task.startTime, delayMinutes);
+        const newStartMins = timeToMinutes(newStartStr);
+        const newEndMins = newStartMins + task.duration;
+
+        if (newStartMins >= 24 * 60) {
+            // Pushed to tomorrow? Unschedule for today
+            return { ...task, startTime: undefined };
+        }
+
+        if (newEndMins > DEADLINE_MINUTES && task.priority === 'could') {
+            // Drop 'could' task if it goes overtime due to delay
+            return { ...task, startTime: undefined };
+        }
+
+        return {
+            ...task,
+            startTime: newStartStr,
+        };
+    });
 };

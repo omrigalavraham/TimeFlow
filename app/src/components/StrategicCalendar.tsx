@@ -162,7 +162,10 @@ export default function StrategicCalendar({ onClose, readOnly = false }: Strateg
                                 const isSelected = date.getTime() === selectedDateState.getTime();
                                 const isCurrentDay = isToday(date);
                                 const dayTasks = taskMap[dateString] || [];
+
                                 const hasExam = dayTasks.some(t => (t.title.includes('מבחן') || t.title.includes('🏆')) && !t.title.includes('למידה'));
+                                const hasAssignment = dayTasks.some(t => t.type === 'project' || t.title.includes('🏁'));
+
                                 const loadLevel = Math.min(dayTasks.length, 5); // 0-5 scale
 
                                 return (
@@ -177,16 +180,29 @@ export default function StrategicCalendar({ onClose, readOnly = false }: Strateg
                                                 : isCurrentDay
                                                     ? "bg-white dark:bg-slate-700 text-indigo-500 border border-indigo-200 dark:border-indigo-800"
                                                     : "hover:bg-white/60 dark:hover:bg-slate-700/60 bg-white/20 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400",
-                                            hasExam && !isSelected && "bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900"
+                                            // Exam Style (Rose)
+                                            hasExam && !isSelected && "bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900",
+                                            // Assignment Style (Amber) - Exam takes precedence if both exist, or mix?
+                                            // Let's make Assignment slightly different or mix if both?
+                                            // If both, maybe a gradient? For now, if NOT exam, show assignment color.
+                                            hasAssignment && !hasExam && !isSelected && "bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900"
                                         )}
                                     >
                                         <span className={cn("text-lg font-bold", isSelected && "scale-110")}>{date.getDate()}</span>
 
-                                        {/* Exam Beacon */}
+                                        {/* Exam Beacon (Top Right) */}
                                         {hasExam && (
                                             <span className="absolute top-1 right-1 flex h-2 w-2">
                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                                            </span>
+                                        )}
+
+                                        {/* Assignment Beacon (Top Left) - Amber */}
+                                        {hasAssignment && (
+                                            <span className="absolute top-1 left-1 flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                                             </span>
                                         )}
 

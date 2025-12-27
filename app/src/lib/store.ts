@@ -19,7 +19,7 @@ export interface Task {
     completed: boolean;
     actualDuration?: number; // in minutes
     recurrence?: 'daily' | 'weekly';
-    type: 'task' | 'break' | 'reminder' | 'focus';
+    type: 'task' | 'break' | 'reminder' | 'focus' | 'project';
     category?: Category;
     order?: number;
     // Reminder specific fields
@@ -30,18 +30,37 @@ export interface Task {
     actionLink?: string;
     autoOpenLink?: boolean;
     groupId?: string; // For grouping related tasks (e.g. Smart Study Plan)
+    courseId?: string; // Link to a Course for assignments
     confidenceScore?: number; // 1-5 rating of how well the material was understood
+}
+
+export type AssignmentType = 'exercise' | 'project' | 'presentation' | 'exam';
+
+export interface SyllabusItem {
+    id: string;
+    title: string;
+    weight: number; // 0-100
+    type: AssignmentType;
+    isCompleted?: boolean;
+}
+
+export interface Course {
+    id: string;
+    title: string;
+    color?: string;
+    syllabus: SyllabusItem[];
 }
 
 interface State {
     tasks: Task[];
+    courses: Course[]; // New: Manage courses and syllabus
     isLoading: boolean;
     selectedDate: string;
     setSelectedDate: (date: string) => void;
 
     // Async Actions
     fetchTasks: () => Promise<void>;
-    addTask: (task: Omit<Task, 'id' | 'completed' | 'scheduledDate'> & { recurrence?: 'daily' | 'weekly', type?: 'task' | 'break' | 'reminder' | 'focus', scheduledDate?: string, category?: Category }) => string;
+    addTask: (task: Omit<Task, 'id' | 'completed' | 'scheduledDate'> & { recurrence?: 'daily' | 'weekly', type?: 'task' | 'break' | 'reminder' | 'focus' | 'project', scheduledDate?: string, category?: Category }) => string;
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (id: string) => void;
     moveTaskToDate: (id: string, date: string) => void;
@@ -49,6 +68,12 @@ interface State {
 
     // Sync Actions
     setTasks: (tasks: Task[]) => void;
+
+    // Course Actions
+    addCourse: (course: Course) => void;
+    updateCourse: (id: string, updates: Partial<Course>) => void;
+    deleteCourse: (id: string) => void;
+
     reorderTasks: (newOrder: Task[]) => void;
     scheduleTasks: (strategy: 'eat-the-frog' | 'snowball' | 'batching') => void;
     handleDelay: (minutes: number) => void;
@@ -83,6 +108,15 @@ interface State {
         existingGroupId?: string;
     }) => void;
 
+    generateAssignmentPlan: (plan: {
+        title: string;
+        courseId: string;
+        deadline: string;
+        estimatedHours?: number;
+        breakdownStrategy: 'auto' | 'manual' | 'one_shot';
+        manualSteps?: string[];
+    }) => void;
+
     // Reality Check / Daily Plan
     dayStatus: 'planning' | 'active' | 'completed';
     setDayStatus: (status: 'planning' | 'active' | 'completed') => void;
@@ -103,6 +137,7 @@ interface State {
 
 export const useStore = create<State>((set, get) => ({
     tasks: [],
+    courses: [], // Initial state
     isLoading: false,
     streak: 0,
     completionData: null,
@@ -130,13 +165,41 @@ export const useStore = create<State>((set, get) => ({
     // Based on the error "missing ... handleRescheduleMissed", it seems it wasn't implemented in the initial object.
     // I will add a dummy implementation for now to satisfy the type.
     handleRescheduleMissed: (taskIds, action) => {
-        console.log("Reschedule", taskIds, action);
-        // Placeholder logic
+        const { tasks, updateTask, deleteTask } = get();
+        const today = new Date().toISOString().split('T')[0];
+
+        if (action === 'dismiss') {
+            taskIds.forEach(id => deleteTask(id));
+            return;
+        }
+
+        if (action === 'move_today') {
+            taskIds.forEach(id => updateTask(id, { scheduledDate: today }));
+            return;
+        }
+
+        if (action === 'spread') {
+            // Spread over the next 3 days
+            taskIds.forEach((id, index) => {
+                const date = new Date();
+                date.setDate(date.getDate() + (index % 3) + 1); // +1 start from tomorrow
+                updateTask(id, { scheduledDate: date.toISOString().split('T')[0] });
+            });
+        }
     },
 
     setSelectedDate: (date) => set({ selectedDate: date }),
     setActiveTask: (id) => set({ activeTaskId: id }),
     setEditingTask: (id) => set({ editingTaskId: id }),
+
+    // Course Actions
+    addCourse: (course) => set((state) => ({ courses: [...state.courses, course] })),
+    updateCourse: (id, updates) => set((state) => ({
+        courses: state.courses.map(c => c.id === id ? { ...c, ...updates } : c)
+    })),
+    deleteCourse: (id) => set((state) => ({
+        courses: state.courses.filter(c => c.id !== id)
+    })),
 
     // Group Actions
     deleteTaskGroup: (groupId) => {
@@ -148,26 +211,44 @@ export const useStore = create<State>((set, get) => ({
             // Background DB delete
             // Note: In a real app we might want a batch delete endpoint
             tasksToDelete.forEach(t => {
-                supabase.from('tasks').delete().eq('id', t.id).then();
+                supabase.from('tasks').delete().eq('id', t.id).then(({ error }) => {
+                    if (error) console.error('Error deleting task in group:', error);
+                });
             });
 
             return { tasks: newTasks };
         });
     },
 
-    // Legacy Fallback: Delete by Title
+    // Legacy Fallback: Delete by Title (for study plans without groupId)
     deleteStudyGroupByTitle: (baseTitle) => {
         set((state) => {
-            const cleanTitle = baseTitle.replace('🏆 ', '').replace('📚 למידה: ', '');
+            // Clean the base title from any prefixes
+            const cleanTitle = baseTitle
+                .replace('🏆 ', '')
+                .replace('📚 למידה: ', '')
+                .replace('📚 ', '')
+                .split(':')[0]  // Get only the course name before the topic
+                .trim();
+
+            // Match tasks more flexibly:
+            // - Exam tasks: "🏆 courseName"
+            // - Study tasks: "📚 courseName: topic" (starts with the pattern)
             const tasksToDelete = state.tasks.filter(t =>
-                (t.title === `🏆 ${cleanTitle}` || t.title === `📚 למידה: ${cleanTitle}`) &&
-                t.category === 'study'
+                t.category === 'study' && (
+                    t.title === `🏆 ${cleanTitle}` ||
+                    t.title.startsWith(`📚 ${cleanTitle}:`) ||
+                    t.title.startsWith(`📚 למידה: ${cleanTitle}`)
+                )
             );
 
             const newTasks = state.tasks.filter(t => !tasksToDelete.includes(t));
 
+            // Delete from DB
             tasksToDelete.forEach(t => {
-                supabase.from('tasks').delete().eq('id', t.id).then();
+                supabase.from('tasks').delete().eq('id', t.id).then(({ error }) => {
+                    if (error) console.error('Error deleting study group task:', error);
+                });
             });
 
             return { tasks: newTasks };
@@ -251,7 +332,9 @@ export const useStore = create<State>((set, get) => ({
         let topicIndex = 0;
 
         if (availableDates.length === 0) {
-            console.warn("No available dates selected for study plan");
+            // Throw error so UI can handle it and show user feedback
+            console.error("No available dates selected for study plan");
+            alert("לא נמצאו ימי לימוד זמינים בין תאריך ההתחלה לתאריך המבחן. בדוק שבחרת ימים בשבוע.");
             return;
         }
 
@@ -286,6 +369,83 @@ export const useStore = create<State>((set, get) => ({
                 groupId: groupId,
             });
         });
+    },
+
+    generateAssignmentPlan: ({ title, courseId, deadline, estimatedHours, breakdownStrategy, manualSteps }) => {
+        const { addTask } = get();
+        const groupId = generateId();
+        const today = getToday();
+
+        // 1. Create the Submission Milestone
+        addTask({
+            title: `🏁 הגשה: ${title}`,
+            scheduledDate: deadline,
+            duration: 0,
+            priority: 'must',
+            type: 'project', // Mark as a Project/Assignment Root
+            category: 'study',
+            groupId: groupId,
+            courseId: courseId || undefined, // Link to course if provided
+            alertTime: '1_day_before',
+        });
+
+        if (breakdownStrategy === 'one_shot') {
+            addTask({
+                title: `📝 עבודה על: ${title}`,
+                scheduledDate: deadline > today ? today : deadline,
+                duration: (estimatedHours || 2) * 60,
+                priority: 'should',
+                type: 'task',
+                category: 'study',
+                groupId: groupId,
+                courseId: courseId || undefined,
+            });
+            return;
+        }
+
+        // Logic for breakdown (Auto/Manual)
+        let tasksToCreate: { title: string, duration: number }[] = [];
+
+        if (breakdownStrategy === 'manual' && manualSteps) {
+            tasksToCreate = manualSteps.map(step => ({ title: step, duration: 60 }));
+        } else if (breakdownStrategy === 'auto' && estimatedHours) {
+            const sessionLength = 90; // 1.5 hours
+            const totalMinutes = estimatedHours * 60;
+            const sessions = Math.ceil(totalMinutes / sessionLength);
+
+            for (let i = 1; i <= sessions; i++) {
+                tasksToCreate.push({
+                    title: `חלק ${i}/${sessions}: עבודה על ${title}`,
+                    duration: sessionLength
+                });
+            }
+        }
+
+        // Simple Distributor: Spread evenly between today and deadline
+        if (tasksToCreate.length > 0) {
+            const start = new Date(today);
+            const end = new Date(deadline);
+            const dayDiff = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
+
+            // Distribute
+            tasksToCreate.forEach((task, index) => {
+                // simple linear mapping
+                const dayOffset = Math.floor((index / tasksToCreate.length) * dayDiff);
+                const taskDate = new Date(start);
+                taskDate.setDate(start.getDate() + dayOffset);
+
+                addTask({
+                    title: task.title,
+                    scheduledDate: taskDate.toISOString().split('T')[0],
+                    duration: task.duration,
+                    priority: 'should',
+                    type: 'task',
+                    category: 'study',
+                    groupId: groupId,
+                    courseId: courseId || undefined,
+                });
+            });
+        }
     },
     openCompletionModal: (taskId, elapsedTime) => set({ completionData: { taskId, elapsedTime } }),
     closeCompletionModal: () => set({ completionData: null }),
@@ -456,7 +616,6 @@ export const useStore = create<State>((set, get) => ({
         if (updates.completed !== undefined) dbUpdates.completed = updates.completed;
         if (updates.actualDuration !== undefined) dbUpdates.actual_duration = updates.actualDuration;
         if (updates.scheduledDate !== undefined) dbUpdates.scheduled_date = updates.scheduledDate;
-        if (updates.scheduledDate !== undefined) dbUpdates.scheduled_date = updates.scheduledDate;
         if (updates.category !== undefined) dbUpdates.category = updates.category;
 
         // Reminder Update Mappings
@@ -484,7 +643,8 @@ export const useStore = create<State>((set, get) => ({
             tasks: state.tasks.map(t => t.id === id ? { ...t, scheduledDate: date, startTime: null } : t)
         }));
         if (!supabase) return;
-        await supabase.from('tasks').update({ scheduled_date: date, start_time: null }).eq('id', id);
+        const { error } = await supabase.from('tasks').update({ scheduled_date: date, start_time: null }).eq('id', id);
+        if (error) console.error('Error moving task to date:', error);
     },
 
     toggleTaskCompletion: async (id) => {

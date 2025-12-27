@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { useStore, Task } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { Play, Pause, Square, CheckCircle, Minimize2, Maximize2, X, Headphones, Volume2, VolumeX, CloudRain, Trees, Coffee, Waves, Palette, Lock, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
@@ -23,7 +24,18 @@ const THEMES = [
 
 
 export default function FocusMode() {
-    const { tasks, activeTaskId, setActiveTask, toggleTaskCompletion, streak, addXp, level, xp } = useStore();
+    // Consolidated store selectors for performance optimization
+    const { tasks, activeTaskId, setActiveTask, toggleTaskCompletion, addXp, updateTask, openCompletionModal } = useStore(
+        useShallow((state) => ({
+            tasks: state.tasks,
+            activeTaskId: state.activeTaskId,
+            setActiveTask: state.setActiveTask,
+            toggleTaskCompletion: state.toggleTaskCompletion,
+            addXp: state.addXp,
+            updateTask: state.updateTask,
+            openCompletionModal: state.openCompletionModal,
+        }))
+    );
     const activeTask = tasks.find(t => t.id === activeTaskId);
 
     const [timeLeft, setTimeLeft] = useState(0);
@@ -73,6 +85,7 @@ export default function FocusMode() {
         return () => {
             if (audioRef.current) {
                 audioRef.current.pause();
+                audioRef.current.src = "";
                 audioRef.current = null;
             }
         }
@@ -131,7 +144,7 @@ export default function FocusMode() {
         }
 
         return () => clearInterval(interval);
-    }, [isActive, isPaused, timeLeft, mode, activeTask]);
+    }, [isActive, isPaused, timeLeft, mode, activeTaskId]); // Use activeTaskId instead of activeTask object
 
     // Handle XP Growth
     useEffect(() => {
@@ -188,11 +201,11 @@ export default function FocusMode() {
         setIsPaused(false);
     }
 
-    const handleComplete = () => {
+    const handleComplete = useCallback(() => {
         if (activeTask) {
             // Save actual duration (in minutes)
             const actualMinutes = Math.ceil(elapsedTime / 60);
-            useStore.getState().updateTask(activeTask.id, { actualDuration: actualMinutes });
+            updateTask(activeTask.id, { actualDuration: actualMinutes });
 
             // Mark as done
             toggleTaskCompletion(activeTask.id);
@@ -204,14 +217,14 @@ export default function FocusMode() {
             });
 
             // Trigger Global Modal for Feedback
-            useStore.getState().openCompletionModal(activeTask.id, elapsedTime);
+            openCompletionModal(activeTask.id, elapsedTime);
 
             // Exit Focus Mode
             setActiveTask(null);
             setMode('focus');
             setIsActive(false);
         }
-    };
+    }, [activeTask, elapsedTime, updateTask, toggleTaskCompletion, openCompletionModal, setActiveTask]);
 
     // Format Time
     const minutes = Math.floor(timeLeft / 60);
@@ -256,24 +269,11 @@ export default function FocusMode() {
     return (
         <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-500 overflow-hidden">
             {/* Gradient Background - Animated Breathing */}
-            {THEMES.map(theme => (
-                <motion.div
-                    key={theme.id}
-                    initial={{ opacity: 0 }}
-                    animate={{
-                        opacity: selectedThemeId === theme.id && !isPaused ? 0.6 : 0,
-                        scale: isActive && !isPaused ? [1, 1.2, 1] : 1, // Breathing effect
-                    }}
-                    transition={{
-                        opacity: { duration: 1 },
-                        scale: { duration: 8, repeat: Infinity, ease: "easeInOut" } // Slow breath
-                    }}
-                    className={cn(
-                        "absolute inset-0 transition-all duration-1000 pointer-events-none bg-gradient-to-br",
-                        theme.gradient
-                    )}
-                />
-            ))}
+            <FocusBackground
+                selectedThemeId={selectedThemeId}
+                isActive={isActive}
+                isPaused={isPaused}
+            />
 
             <div className="absolute inset-0 bg-white/60 dark:bg-black/40 backdrop-blur-[30px]" />
 
@@ -402,3 +402,30 @@ export default function FocusMode() {
         </div>
     );
 }
+
+const FocusBackground = memo(({ selectedThemeId, isActive, isPaused }: { selectedThemeId: string, isActive: boolean, isPaused: boolean }) => {
+    return (
+        <>
+            {THEMES.map(theme => (
+                <motion.div
+                    key={theme.id}
+                    initial={{ opacity: 0 }}
+                    animate={{
+                        opacity: selectedThemeId === theme.id && !isPaused ? 0.6 : 0,
+                        scale: isActive && !isPaused ? [1, 1.2, 1] : 1, // Breathing effect
+                    }}
+                    transition={{
+                        opacity: { duration: 1 },
+                        scale: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                    className={cn(
+                        "absolute inset-0 pointer-events-none bg-gradient-to-br",
+                        theme.gradient
+                    )}
+                />
+            ))}
+        </>
+    );
+});
+FocusBackground.displayName = 'FocusBackground';
+
