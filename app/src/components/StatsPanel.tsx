@@ -59,8 +59,8 @@ export default function StatsPanel() {
     const colors = getProgressColors(stats.progress);
 
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 space-y-6 transition-colors">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6 transition-colors">
+            <h2 className="text-lg font-bold text-card-foreground flex items-center gap-2">
                 <PieChart className={colors.text} size={20} /> סקירה יומית
             </h2>
 
@@ -82,15 +82,15 @@ export default function StatsPanel() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-center">
+                <div className="bg-muted p-3 rounded-lg text-center">
                     <Trophy className="mx-auto text-yellow-500 mb-1" size={20} />
-                    <div className="text-2xl font-bold text-slate-700 dark:text-slate-200">{stats.completed}/{stats.total}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">הושלמו</div>
+                    <div className="text-2xl font-bold text-foreground">{stats.completed}/{stats.total}</div>
+                    <div className="text-xs text-muted-foreground">הושלמו</div>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg text-center">
+                <div className="bg-muted p-3 rounded-lg text-center">
                     <Target className="mx-auto text-blue-500 mb-1" size={20} />
-                    <div className="text-xl font-bold text-slate-700 dark:text-slate-200" dir="ltr">{stats.hoursLeft}h {stats.minutesLeft}m</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">זמן שנותר</div>
+                    <div className="text-xl font-bold text-foreground" dir="ltr">{stats.hoursLeft}h {stats.minutesLeft}m</div>
+                    <div className="text-xs text-muted-foreground">זמן שנותר</div>
                 </div>
             </div>
         </div>

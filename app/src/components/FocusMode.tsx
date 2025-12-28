@@ -20,6 +20,12 @@ const THEMES = [
     { id: 'forest', label: 'יער (רמה 3)', gradient: 'from-emerald-500 via-green-500 to-teal-500', minLevel: 3 },
     { id: 'fire', label: 'אש (רמה 5)', gradient: 'from-orange-500 via-red-500 to-yellow-500', minLevel: 5 },
     { id: 'midnight', label: 'חצות (רמה 10)', gradient: 'from-slate-900 via-purple-900 to-black', minLevel: 10 },
+    // New Themes
+    { id: 'space', label: 'חלל', gradient: 'from-indigo-900 via-purple-900 to-black', minLevel: 1 },
+    { id: 'sunset', label: 'שקיעה', gradient: 'from-orange-400 via-rose-500 to-violet-600', minLevel: 1 },
+    { id: 'aurora', label: 'זוהר צפוני', gradient: 'from-green-300 via-teal-500 to-blue-600', minLevel: 1 },
+    { id: 'blossom', label: 'פריחת הדובדבן', gradient: 'from-pink-200 via-pink-400 to-rose-500', minLevel: 1 },
+    { id: 'golden', label: 'שעת זהב', gradient: 'from-amber-200 via-orange-300 to-yellow-500', minLevel: 1 },
 ];
 
 
@@ -277,6 +283,11 @@ export default function FocusMode() {
 
             <div className="absolute inset-0 bg-white/60 dark:bg-black/40 backdrop-blur-[30px]" />
 
+            {/* Stars Effect for Space Theme - Rendered ABOVE the blur layer for crispness */}
+            <AnimatePresence>
+                {selectedThemeId === 'space' && <Stars />}
+            </AnimatePresence>
+
             {/* Smart Insight Toast */}
             <AnimatePresence>
                 {insight && (
@@ -428,4 +439,50 @@ const FocusBackground = memo(({ selectedThemeId, isActive, isPaused }: { selecte
     );
 });
 FocusBackground.displayName = 'FocusBackground';
+
+const Stars = memo(() => {
+    const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: number; delay: number; }[]>([]);
+
+    useEffect(() => {
+        const generatedStars = Array.from({ length: 50 }).map((_, i) => ({
+            id: i,
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+            size: Math.random() * 2 + 1,
+            duration: Math.random() * 3 + 2,
+            delay: Math.random() * 2
+        }));
+        setStars(generatedStars);
+    }, []);
+
+    if (stars.length === 0) return null;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {stars.map((star) => (
+                <motion.div
+                    key={star.id}
+                    className="absolute bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                    style={{
+                        top: star.top,
+                        left: star.left,
+                        width: star.size,
+                        height: star.size,
+                    }}
+                    animate={{
+                        opacity: [0.2, 1, 0.2],
+                        scale: [1, 1.5, 1],
+                    }}
+                    transition={{
+                        duration: star.duration,
+                        repeat: Infinity,
+                        delay: star.delay,
+                        ease: "easeInOut"
+                    }}
+                />
+            ))}
+        </div>
+    );
+});
+Stars.displayName = 'Stars';
 

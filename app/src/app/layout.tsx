@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" dir="rtl" className="transition-colors duration-200">
-      <body className={`${rubik.className} min-h-screen bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-200`}>
+      <body className={`${rubik.className} min-h-screen bg-[var(--background)] text-[var(--foreground)] transition-colors duration-200`}>
         <main className="container mx-auto py-8 px-4">
           <header className="mb-8 flex items-center justify-between">
             <div>

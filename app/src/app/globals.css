@@ -32,16 +32,170 @@
 }
 
 :root {
-  --background: #ffffff;
+  /* Base Light Theme */
+  --background: #F8F9FA;
+  /* Slate-50 */
   --foreground: #0f172a;
   /* Slate-900 */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #9333ea;
+  --primary-foreground: #ffffff;
+  --muted: #f1f5f9;
+  /* Slate-100 */
+  --muted-foreground: #64748b;
+  /* Slate-500 */
+  --border: #e2e8f0;
+  /* Slate-200 */
+  --input: #e2e8f0;
 }
 
 .dark {
-  --background: #0f172a;
-  /* Slate-900 */
+  /* Base Dark Theme */
+  --background: #020617;
+  /* Slate-950 */
   --foreground: #f8fafc;
   /* Slate-50 */
+  --card: #0f172a;
+  /* Slate-900 */
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #a855f7;
+  /* Purple-500 */
+  --primary-foreground: #ffffff;
+  --muted: #1e293b;
+  /* Slate-800 */
+  --muted-foreground: #94a3b8;
+  /* Slate-400 */
+  --border: #1e293b;
+  /* Slate-800 */
+  --input: #1e293b;
+}
+
+/* --- CYBERPUNK THEME --- */
+.theme-cyberpunk {
+  --background: #050505;
+  /* Deep Void */
+  --foreground: #e0faff;
+  /* Cyan Tinted White */
+  --card: #09090b;
+  /* Slightly lighter black */
+  --card-foreground: #00f3ff;
+  /* Neon Cyan */
+  --popover: #09090b;
+  --popover-foreground: #00f3ff;
+  --primary: #ff0099;
+  /* Hot Pink */
+  --primary-foreground: #ffffff;
+  --muted: #121212;
+  --muted-foreground: #00f3ff;
+  --border: #00f3ff;
+  /* CYAN BORDER EVERYWHERE */
+  --input: #1a1a1a;
+
+  /* Cyberpunk Grid Background */
+  background-image:
+    linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-attachment: fixed;
+}
+
+/* --- AGGRESSIVE CYBERPUNK OVERRIDES --- */
+
+/* 1. Force SHARP CORNERS (No Rounding) */
+.theme-cyberpunk * {
+  border-radius: 0px !important;
+}
+
+/* 2. Wireframe Look for Cards */
+.theme-cyberpunk .bg-white,
+.theme-cyberpunk .bg-card,
+.theme-cyberpunk .dark\:bg-slate-900,
+.theme-cyberpunk .dark\:bg-slate-950,
+.theme-cyberpunk .bg-slate-50 {
+  background-color: rgba(9, 9, 11, 0.8) !important;
+  /* Semi-transparent */
+  border: 1px solid #00f3ff !important;
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.1), inset 0 0 20px rgba(0, 243, 255, 0.05) !important;
+  backdrop-filter: blur(5px);
+}
+
+.theme-cyberpunk .bg-slate-100,
+.theme-cyberpunk .dark\:bg-slate-800,
+.theme-cyberpunk .bg-muted {
+  background-color: #1a1a1a !important;
+  border: 1px dashed #333 !important;
+}
+
+/* 3. Neon Actions (Pink & Cyan) */
+.theme-cyberpunk .bg-indigo-600,
+.theme-cyberpunk .bg-purple-600,
+.theme-cyberpunk .bg-blue-600,
+.theme-cyberpunk .bg-primary {
+  background: #ff0099 !important;
+  /* Hot Pink */
+  border: 1px solid #ff0099 !important;
+  color: white !important;
+  box-shadow: 4px 4px 0px #00f3ff !important;
+  /* Retro offset shadow */
+  text-transform: uppercase;
+  font-family: 'Courier New', monospace;
+  /* Tech feel */
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.theme-cyberpunk .bg-indigo-600:hover,
+.theme-cyberpunk .bg-purple-600:hover,
+.theme-cyberpunk .bg-blue-600:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #00f3ff !important;
+}
+
+/* 4. Text Glitch & Accents */
+.theme-cyberpunk .text-indigo-600,
+.theme-cyberpunk .text-purple-600,
+.theme-cyberpunk .text-blue-600,
+.theme-cyberpunk .text-slate-500,
+.theme-cyberpunk .dark\:text-slate-400 {
+  color: #00f3ff !important;
+  text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+}
+
+.theme-cyberpunk .text-slate-800,
+.theme-cyberpunk .dark\:text-white {
+  color: white !important;
+}
+
+/* 5. Inputs */
+.theme-cyberpunk input,
+.theme-cyberpunk textarea,
+.theme-cyberpunk select {
+  background-color: #000 !important;
+  border: 1px solid #333 !important;
+  color: #00f3ff !important;
+  font-family: monospace;
+}
+
+.theme-cyberpunk input:focus {
+  border-color: #ff0099 !important;
+  box-shadow: 0 0 10px rgba(255, 0, 153, 0.5) !important;
+}
+
+/* 6. Sidebar Specifics */
+.theme-cyberpunk aside {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  border-right: 1px solid #00f3ff !important;
+}
+
+.theme-cyberpunk aside .bg-indigo-50 {
+  background-color: rgba(255, 0, 153, 0.2) !important;
+  color: #ff0099 !important;
+  border: 1px solid #ff0099 !important;
 }
 
 body {
@@ -49,6 +203,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .priority-must {
@@ -59,6 +214,109 @@ body {
   @apply bg-teal-100 text-teal-700 border-teal-200 hover:bg-teal-200;
 }
 
-.priority-could {
-  @apply bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200;
+/* Semantic Utilities mapping to variables */
+@layer utilities {
+  .bg-background {
+    background-color: var(--background);
+  }
+
+  .text-foreground {
+    color: var(--foreground);
+  }
+
+  .bg-card {
+    background-color: var(--card);
+  }
+
+  .text-card-foreground {
+    color: var(--card-foreground);
+  }
+
+  .bg-popover {
+    background-color: var(--popover);
+  }
+
+  .text-popover-foreground {
+    color: var(--popover-foreground);
+  }
+
+  .bg-muted {
+    background-color: var(--muted);
+  }
+
+  .text-muted-foreground {
+    color: var(--muted-foreground);
+  }
+
+  .border-border {
+    border-color: var(--border);
+  }
+
+  .border-input {
+    border-color: var(--input);
+  }
+
+  .bg-primary {
+    background-color: var(--primary);
+  }
+
+  .text-primary-foreground {
+    color: var(--primary-foreground);
+  }
+}
+
+/* --- RETRO / SYNTHWAVE THEME --- */
+.theme-retro {
+  --background: #1a0b2e;
+  /* Deep Purple */
+  --foreground: #fda4af;
+  /* Soft Pink text */
+  --card: #2d1b4e;
+  --card-foreground: #ffffff;
+  --popover: #2d1b4e;
+  --popover-foreground: #ffffff;
+  --primary: #f472b6;
+  /* Pink */
+  --primary-foreground: #ffffff;
+  --muted: #432c7a;
+  --muted-foreground: #f9a8d4;
+  --border: #d946ef;
+  /* Magenta Border */
+  --input: #432c7a;
+
+  /* Sunset Grid */
+  background-image:
+    linear-gradient(#d946ef 1px, transparent 1px),
+    linear-gradient(90deg, #d946ef 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center bottom;
+}
+
+/* Retro Aggressive Overrides */
+.theme-retro * {
+  font-family: 'Verdana', sans-serif !important;
+  /* Retro-ish sans */
+}
+
+.theme-retro .bg-white,
+.theme-retro .dark\:bg-slate-900,
+.theme-retro .bg-card {
+  background: linear-gradient(180deg, rgba(45, 27, 78, 0.9) 0%, rgba(20, 10, 40, 0.9) 100%) !important;
+  border-bottom: 4px solid #f472b6 !important;
+  /* Thick Pink Bottom Border */
+  border-radius: 10px !important;
+  box-shadow: 0 10px 20px rgba(244, 114, 182, 0.2) !important;
+}
+
+.theme-retro .bg-indigo-600,
+.theme-retro .bg-blue-600 {
+  background: linear-gradient(to right, #f59e0b, #ec4899, #8b5cf6) !important;
+  /* Sunset Gradient */
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4) !important;
+}
+
+.theme-retro aside {
+  background: rgba(26, 11, 46, 0.95) !important;
+  border-right: 2px solid #ec4899 !important;
 }

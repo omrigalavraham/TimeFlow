@@ -41,7 +41,7 @@ const getCategoryStyles = (cat: string) => {
         case 'home': return "bg-orange-50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/30";
         case 'health': return "bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30";
         case 'social': return "bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30";
-        default: return "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700";
+        default: return "bg-card border-border";
     }
 }
 
@@ -124,7 +124,7 @@ const TaskCardBase = forwardRef<HTMLDivElement, TaskCardProps>(({
                     "flex-1 flex flex-col md:flex-row items-stretch md:items-center gap-3 p-4 md:p-4 rounded-2xl shadow-sm border border-transparent transition-all overflow-hidden",
                     taskColor,
                     task.completed && "opacity-60 grayscale",
-                    isOverlay ? "shadow-2xl rotate-1 bg-white dark:bg-slate-800" : "hover:shadow-md hover:border-black/5 dark:hover:border-white/10",
+                    isOverlay ? "shadow-2xl rotate-1 bg-card" : "hover:shadow-md hover:border-black/5 dark:hover:border-white/10",
                     isActive && task.type !== 'break' && "ring-2 ring-purple-600 shadow-xl shadow-purple-500/20 animate-pulse bg-white/50"
                 )}>
                     {/* Handle + Content */}
@@ -140,7 +140,7 @@ const TaskCardBase = forwardRef<HTMLDivElement, TaskCardProps>(({
                             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-1">
                                 <span
                                     className={cn(
-                                        "font-bold text-lg leading-snug block text-slate-800 dark:text-slate-100 break-words whitespace-normal",
+                                        "font-bold text-lg leading-snug block text-card-foreground break-words whitespace-normal",
                                         task.completed && "line-through text-slate-500",
                                         task.type === 'break' && "text-teal-700 dark:text-teal-200"
                                     )}
